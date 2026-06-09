@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.tools/
+coverage/
+tsconfig.tsbuildinfo
+.vite-dev.*.log
+.DS_Store
+npm-debug.log*

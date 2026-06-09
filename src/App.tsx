@@ -1,0 +1,42 @@
+import { useEffect, useState } from "react";
+import { AppShell } from "./components/AppShell";
+import { CaregiverPage } from "./pages/CaregiverPage";
+import { DemoControlPage } from "./pages/DemoControlPage";
+import { DocsPage } from "./pages/DocsPage";
+import { ElderDashboardPage } from "./pages/ElderDashboardPage";
+import { FamilyPage } from "./pages/FamilyPage";
+import { InstitutionPage } from "./pages/InstitutionPage";
+
+const getCurrentPath = () => {
+  const path = window.location.hash.replace(/^#/, "");
+  return path || "/institution";
+};
+
+const renderRoute = (path: string) => {
+  if (path === "/institution") return <InstitutionPage />;
+  if (path === "/caregiver") return <CaregiverPage />;
+  if (path.startsWith("/elder/")) {
+    return <ElderDashboardPage elderId={path.split("/")[2] || "E001"} />;
+  }
+  if (path.startsWith("/family/")) {
+    return <FamilyPage elderId={path.split("/")[2] || "E001"} />;
+  }
+  if (path === "/demo-control") return <DemoControlPage />;
+  if (path === "/docs") return <DocsPage />;
+  return <InstitutionPage />;
+};
+
+export const App = () => {
+  const [path, setPath] = useState(getCurrentPath);
+
+  useEffect(() => {
+    if (!window.location.hash) {
+      window.location.hash = "#/institution";
+    }
+    const handleHashChange = () => setPath(getCurrentPath());
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  return <AppShell currentPath={path}>{renderRoute(path)}</AppShell>;
+};
