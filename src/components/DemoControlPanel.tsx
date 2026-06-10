@@ -72,7 +72,7 @@ export const DemoControlPanel = ({ state, dispatch }: DemoControlPanelProps) => 
   const displayStatus = deriveDisplayStatus(risk, careLoopStatus);
   const stage = getStage(state);
   const hasVoice = events.some((event) => event.eventType === "voice_symptom");
-  const canTriggerDizziness = !hasVoice || careLoopStatus === "completed";
+  const canTriggerDizziness = !hasVoice;
   const canAccept = Boolean(task && task.status === "pending");
   const canMarkViewed = Boolean(task && task.status === "in_progress" && careLoopStatus === "in_progress");
   const canConfirmMedication = Boolean(
