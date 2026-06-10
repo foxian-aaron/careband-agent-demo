@@ -17,7 +17,13 @@ import { mockMedicationPlans, mockProfiles } from "../data/mockProfiles";
 import { mockSnapshots } from "../data/mockSnapshots";
 import { mockTrends } from "../data/mockTrends";
 import { generateAgentSummaries } from "../lib/agentFormatter";
+import { deriveCareLoopStatus, deriveDisplayStatus } from "../lib/displayStatus";
 import { calculateRisk } from "../lib/riskEngine";
+import {
+  getActiveTaskForElder as selectActiveTaskForElder,
+  getLatestTaskForElder,
+  getTaskHistoryForElder as selectTaskHistoryForElder,
+} from "../lib/taskSelectors";
 import type {
   AgentRoleSummaries,
   CareEvent,
@@ -31,7 +37,7 @@ import type {
   RiskResult,
 } from "../types";
 
-const storageKey = "careband-agent-demo-state-v0.1";
+const storageKey = "careband-agent-demo-state-v0.1.1";
 const chenId = "E001";
 
 export interface DemoState {
@@ -49,6 +55,7 @@ export type DemoAction =
   | { type: "RESET_DEMO" }
   | { type: "TRIGGER_CHEN_DIZZINESS" }
   | { type: "CAREGIVER_ACCEPT_TASK" }
+  | { type: "CAREGIVER_MARK_VIEWED" }
   | { type: "CONFIRM_EVENING_MEDICATION" }
   | { type: "COMPLETE_CARE_TASK" }
   | { type: "TRIGGER_SOS" }
@@ -85,24 +92,46 @@ const addEventOnce = (events: CareEvent[], event: CareEvent) =>
     ? events
     : [...events, event];
 
-const replaceChenTask = (tasks: CareTask[], task: CareTask) => [
-  ...tasks.filter((existing) => existing.elderId !== chenId),
-  task,
-];
+const nextTaskId = (tasks: CareTask[], baseId: string) => {
+  if (!tasks.some((task) => task.taskId === baseId)) return baseId;
+  return `${baseId}-${tasks.filter((task) => task.taskId.startsWith(baseId)).length + 1}`;
+};
 
-const updateChenTask = (
-  tasks: CareTask[],
-  updater: (task: CareTask) => CareTask,
-) =>
-  tasks.map((task) =>
-    task.elderId === chenId && task.status !== "completed" ? updater(task) : task,
+const upsertActiveTask = (tasks: CareTask[], elderId: string, task: CareTask) => {
+  const activeTask = selectActiveTaskForElder(elderId, tasks);
+  if (!activeTask) return [...tasks, task];
+  return tasks.map((existing) =>
+    existing.taskId === activeTask.taskId
+      ? {
+          ...existing,
+          priority: task.priority,
+          title: task.title,
+          reason: task.reason,
+          recommendedAction: task.recommendedAction,
+          sourceEventId: task.sourceEventId,
+          updatedAt: task.updatedAt,
+        }
+      : existing,
   );
+};
 
-const reducer = (state: DemoState, action: DemoAction): DemoState => {
+const updateActiveTask = (
+  tasks: CareTask[],
+  elderId: string,
+  updater: (task: CareTask) => CareTask,
+) => {
+  const activeTask = selectActiveTaskForElder(elderId, tasks);
+  if (!activeTask) return tasks;
+  return tasks.map((task) => (task.taskId === activeTask.taskId ? updater(task) : task));
+};
+
+export const demoReducer = (state: DemoState, action: DemoAction): DemoState => {
   switch (action.type) {
     case "RESET_DEMO":
       return createInitialDemoState();
     case "TRIGGER_CHEN_DIZZINESS": {
+      const existingActiveTask = selectActiveTaskForElder(chenId, state.tasks);
+      const taskId = existingActiveTask?.taskId ?? nextTaskId(state.tasks, "TASK-E001-DIZZINESS");
       const voiceEvent: CareEvent = {
         eventId: "EVT-E001-DIZZINESS",
         elderId: chenId,
@@ -112,6 +141,12 @@ const reducer = (state: DemoState, action: DemoAction): DemoState => {
         rawText: "我有点头晕",
         source: "demo",
         severity: "high_risk",
+        payload: {
+          symptomKeywords: ["头晕"],
+        },
+        status: "open",
+        linkedTaskId: taskId,
+        confidence: 0.94,
       };
       const notifyEvent: CareEvent = {
         eventId: "EVT-E001-NOTIFY-CAREGIVER",
@@ -121,9 +156,11 @@ const reducer = (state: DemoState, action: DemoAction): DemoState => {
         title: "系统通知护工：陈伯需要立即查看",
         source: "system",
         severity: "high_risk",
+        status: "open",
+        linkedTaskId: taskId,
       };
       const highTask: CareTask = {
-        taskId: "TASK-E001-DIZZINESS",
+        taskId,
         elderId: chenId,
         sourceEventId: voiceEvent.eventId,
         priority: "high",
@@ -147,7 +184,7 @@ const reducer = (state: DemoState, action: DemoAction): DemoState => {
           },
         },
         events: addEventOnce(addEventOnce(state.events, voiceEvent), notifyEvent),
-        tasks: replaceChenTask(state.tasks, highTask),
+        tasks: upsertActiveTask(state.tasks, chenId, highTask),
         operationalStates: {
           ...state.operationalStates,
           [chenId]: "pending",
@@ -155,6 +192,8 @@ const reducer = (state: DemoState, action: DemoAction): DemoState => {
       };
     }
     case "CAREGIVER_ACCEPT_TASK": {
+      const activeTask = selectActiveTaskForElder(chenId, state.tasks);
+      if (!activeTask) return state;
       const acceptedEvent: CareEvent = {
         eventId: "EVT-E001-CAREGIVER-ACCEPTED",
         elderId: chenId,
@@ -163,12 +202,16 @@ const reducer = (state: DemoState, action: DemoAction): DemoState => {
         title: "护工A已接单，正在查看陈伯情况",
         source: "caregiver",
         severity: "attention",
+        status: "acknowledged",
+        linkedTaskId: activeTask.taskId,
+        handledBy: "护工A",
+        handledAt: "2026-06-10T20:20:00+08:00",
       };
 
       return {
         ...state,
         events: addEventOnce(state.events, acceptedEvent),
-        tasks: updateChenTask(state.tasks, (task) => ({
+        tasks: updateActiveTask(state.tasks, chenId, (task) => ({
           ...task,
           status: "in_progress",
           updatedAt: "2026-06-10T20:20:00+08:00",
@@ -179,7 +222,41 @@ const reducer = (state: DemoState, action: DemoAction): DemoState => {
         },
       };
     }
+    case "CAREGIVER_MARK_VIEWED": {
+      const activeTask = selectActiveTaskForElder(chenId, state.tasks);
+      if (!activeTask) return state;
+      const checkedEvent: CareEvent = {
+        eventId: "EVT-E001-CAREGIVER-CHECKED",
+        elderId: chenId,
+        eventType: "caregiver_checked",
+        timestamp: "2026-06-10T20:21:00+08:00",
+        title: "护工A已到场查看陈伯",
+        source: "caregiver",
+        severity: "attention",
+        payload: {
+          note: "护工A已到场查看陈伯",
+        },
+        status: "acknowledged",
+        linkedTaskId: activeTask.taskId,
+        handledBy: "护工A",
+        handledAt: "2026-06-10T20:21:00+08:00",
+      };
+
+      return {
+        ...state,
+        events: addEventOnce(state.events, checkedEvent),
+        tasks: updateActiveTask(state.tasks, chenId, (task) => ({
+          ...task,
+          updatedAt: "2026-06-10T20:21:00+08:00",
+        })),
+        operationalStates: {
+          ...state.operationalStates,
+          [chenId]: "in_progress",
+        },
+      };
+    }
     case "CONFIRM_EVENING_MEDICATION": {
+      const activeTask = selectActiveTaskForElder(chenId, state.tasks);
       const medicationEvent: CareEvent = {
         eventId: "EVT-E001-MED-PM-CONFIRMED",
         elderId: chenId,
@@ -188,6 +265,13 @@ const reducer = (state: DemoState, action: DemoAction): DemoState => {
         title: "晚药已确认",
         source: "caregiver",
         severity: "stable",
+        payload: {
+          medicationName: "晚药",
+        },
+        status: "resolved",
+        linkedTaskId: activeTask?.taskId,
+        handledBy: "护工A",
+        handledAt: "2026-06-10T20:22:00+08:00",
       };
 
       return {
@@ -201,13 +285,14 @@ const reducer = (state: DemoState, action: DemoAction): DemoState => {
           },
         },
         events: addEventOnce(state.events, medicationEvent),
-        tasks: updateChenTask(state.tasks, (task) => ({
+        tasks: updateActiveTask(state.tasks, chenId, (task) => ({
           ...task,
           updatedAt: "2026-06-10T20:22:00+08:00",
         })),
       };
     }
     case "COMPLETE_CARE_TASK": {
+      const activeTask = selectActiveTaskForElder(chenId, state.tasks);
       const medicationEvent: CareEvent = {
         eventId: "EVT-E001-MED-PM-CONFIRMED",
         elderId: chenId,
@@ -216,7 +301,16 @@ const reducer = (state: DemoState, action: DemoAction): DemoState => {
         title: "晚药已确认",
         source: "caregiver",
         severity: "stable",
+        payload: {
+          medicationName: "晚药",
+        },
+        status: "resolved",
+        linkedTaskId: activeTask?.taskId,
+        handledBy: "护工A",
+        handledAt: "2026-06-10T20:22:00+08:00",
       };
+      const note =
+        "20:25 护工A已查看陈伯，已确认晚药，陈伯目前在房间休息，建议明早继续关注活动和睡眠。";
       const completedEvent: CareEvent = {
         eventId: "EVT-E001-CAREGIVER-COMPLETED",
         elderId: chenId,
@@ -225,9 +319,14 @@ const reducer = (state: DemoState, action: DemoAction): DemoState => {
         title: "护工A已查看陈伯，已确认晚药，陈伯目前在房间休息",
         source: "caregiver",
         severity: "observation",
+        payload: {
+          note,
+        },
+        status: "resolved",
+        linkedTaskId: activeTask?.taskId,
+        handledBy: "护工A",
+        handledAt: "2026-06-10T20:25:00+08:00",
       };
-      const note =
-        "20:25 护工A已查看陈伯，已确认晚药，陈伯目前在房间休息，建议明早继续关注活动和睡眠。";
 
       return {
         ...state,
@@ -242,7 +341,7 @@ const reducer = (state: DemoState, action: DemoAction): DemoState => {
         },
         events: addEventOnce(addEventOnce(state.events, medicationEvent), completedEvent),
         tasks: state.tasks.map((task) =>
-          task.elderId === chenId
+          activeTask && task.taskId === activeTask.taskId
             ? {
                 ...task,
                 status: "completed",
@@ -259,6 +358,8 @@ const reducer = (state: DemoState, action: DemoAction): DemoState => {
       };
     }
     case "TRIGGER_SOS": {
+      const existingActiveTask = selectActiveTaskForElder(chenId, state.tasks);
+      const taskId = existingActiveTask?.taskId ?? nextTaskId(state.tasks, "TASK-E001-SOS");
       const sosEvent: CareEvent = {
         eventId: "EVT-E001-SOS",
         elderId: chenId,
@@ -268,9 +369,11 @@ const reducer = (state: DemoState, action: DemoAction): DemoState => {
         rawText: "SOS 求助",
         source: "demo",
         severity: "urgent",
+        status: "open",
+        linkedTaskId: taskId,
       };
       const urgentTask: CareTask = {
-        taskId: "TASK-E001-SOS",
+        taskId,
         elderId: chenId,
         sourceEventId: sosEvent.eventId,
         priority: "urgent",
@@ -287,7 +390,7 @@ const reducer = (state: DemoState, action: DemoAction): DemoState => {
       return {
         ...state,
         events: addEventOnce(state.events, sosEvent),
-        tasks: replaceChenTask(state.tasks, urgentTask),
+        tasks: upsertActiveTask(state.tasks, chenId, urgentTask),
         operationalStates: {
           ...state.operationalStates,
           [chenId]: "pending",
@@ -303,6 +406,10 @@ const reducer = (state: DemoState, action: DemoAction): DemoState => {
         title: "模拟数据不足：设备佩戴或同步需确认",
         source: "demo",
         severity: "data_insufficient",
+        payload: {
+          previousValue: state.snapshots[chenId].dataCompleteness,
+          currentValue: 0.32,
+        },
       };
 
       return {
@@ -340,7 +447,7 @@ const loadInitialState = () => {
 };
 
 export const DemoProvider = ({ children }: { children: ReactNode }) => {
-  const [state, dispatch] = useReducer(reducer, undefined, loadInitialState);
+  const [state, dispatch] = useReducer(demoReducer, undefined, loadInitialState);
 
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(state));
@@ -363,7 +470,14 @@ export const getEventsForElder = (state: DemoState, elderId: string) =>
   state.events.filter((event) => event.elderId === elderId);
 
 export const getTaskForElder = (state: DemoState, elderId: string) =>
-  state.tasks.find((task) => task.elderId === elderId);
+  selectActiveTaskForElder(elderId, state.tasks) ??
+  getLatestTaskForElder(elderId, state.tasks);
+
+export const getActiveTaskForElder = (state: DemoState, elderId: string) =>
+  selectActiveTaskForElder(elderId, state.tasks);
+
+export const getTaskHistoryForElder = (state: DemoState, elderId: string) =>
+  selectTaskHistoryForElder(elderId, state.tasks);
 
 export const getRiskForElder = (
   state: DemoState,
@@ -380,15 +494,18 @@ export const getAgentSummariesForElder = (
   state: DemoState,
   elderId: string,
 ): AgentRoleSummaries => {
-  const task = getTaskForElder(state, elderId);
-  const operationalState = state.operationalStates[elderId] ?? "normal";
+  const events = getEventsForElder(state, elderId);
+  const risk = getRiskForElder(state, elderId);
+  const careLoopStatus = deriveCareLoopStatus(elderId, state.tasks, events);
+  const displayStatus = deriveDisplayStatus(risk, careLoopStatus);
 
   return generateAgentSummaries(
     state.profiles[elderId],
     state.baselines[elderId],
     state.snapshots[elderId],
-    getEventsForElder(state, elderId),
-    getRiskForElder(state, elderId),
-    task?.status ?? operationalState,
+    events,
+    risk,
+    careLoopStatus,
+    displayStatus,
   );
 };

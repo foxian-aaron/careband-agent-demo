@@ -2,24 +2,26 @@ import type {
   CareTask,
   DailySnapshot,
   ElderProfile,
-  OperationalState,
   RiskResult,
 } from "../types";
+import type { CareLoopStatus, DisplayStatus } from "../lib/displayStatus";
 import {
+  careLoopLabels,
   medicationLabels,
-  operationalLabels,
   riskLabels,
   taskStatusLabels,
 } from "../lib/statusLabels";
 import { formatDateTime } from "../lib/dateUtils";
 import { RiskBadge } from "./RiskBadge";
+import { StatusPill } from "./StatusPill";
 
 interface FamilyPeaceCardProps {
   profile: ElderProfile;
   snapshot: DailySnapshot;
   risk: RiskResult;
+  displayStatus: DisplayStatus;
+  careLoopStatus: CareLoopStatus;
   task?: CareTask;
-  operationalState: OperationalState;
   exceptionText: string;
 }
 
@@ -27,17 +29,35 @@ export const FamilyPeaceCard = ({
   profile,
   snapshot,
   risk,
+  displayStatus,
+  careLoopStatus,
   task,
-  operationalState,
   exceptionText,
 }: FamilyPeaceCardProps) => (
   <article className="family-peace-card">
     <div className="family-peace-card__head">
       <div>
         <span>今日安心卡</span>
-        <h2>{profile.name}今日状态：{riskLabels[risk.riskLevel]}</h2>
+        <h2>{profile.name}今日状态：{displayStatus.label}</h2>
+        {displayStatus.shouldShowHistoricalRisk ? (
+          <p>今日风险等级：{riskLabels[risk.riskLevel]}，已纳入照护跟进记录。</p>
+        ) : null}
       </div>
-      <RiskBadge level={risk.riskLevel} />
+      <div className="family-status-stack">
+        <StatusPill
+          label={displayStatus.shortLabel}
+          tone={
+            displayStatus.tone === "follow_up"
+              ? "follow-up"
+              : displayStatus.tone === "high_risk"
+                ? "high-risk"
+                : displayStatus.tone === "data_insufficient"
+                  ? "muted"
+                  : displayStatus.tone
+          }
+        />
+        <RiskBadge level={risk.riskLevel} />
+      </div>
     </div>
     <div className="peace-grid">
       <div>
@@ -62,7 +82,7 @@ export const FamilyPeaceCard = ({
       </div>
       <div>
         <span>护工跟进</span>
-        <strong>{operationalLabels[operationalState]}</strong>
+        <strong>{careLoopLabels[careLoopStatus]}</strong>
         <p>{task ? taskStatusLabels[task.status] : "暂无任务"}</p>
       </div>
       <div>

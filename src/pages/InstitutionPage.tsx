@@ -2,14 +2,24 @@ import { useMemo, useState } from "react";
 import { InstitutionHeatmap, type HeatmapRow } from "../components/InstitutionHeatmap";
 import { MedicalDisclaimer } from "../components/MedicalDisclaimer";
 import { RiskBadge } from "../components/RiskBadge";
-import { getRiskForElder, getTaskForElder, useDemo } from "../store/demoStore";
+import {
+  getActiveTaskForElder,
+  getEventsForElder,
+  getRiskForElder,
+  getTaskForElder,
+  useDemo,
+} from "../store/demoStore";
+import { deriveCareLoopStatus, deriveDisplayStatus } from "../lib/displayStatus";
+import { getRecentCareRecord } from "../lib/taskSelectors";
 import type { RiskLevel } from "../types";
 import { riskLabels, riskOrder } from "../lib/statusLabels";
 
 type FilterValue = "all" | RiskLevel;
+type TreatmentFilter = "all" | "pending" | "in_progress" | "checked" | "follow_up" | "none";
 
 const filters: Array<{ value: FilterValue; label: string }> = [
   { value: "all", label: "全部" },
+  { value: "urgent", label: "紧急" },
   { value: "high_risk", label: "高风险" },
   { value: "attention", label: "需关注" },
   { value: "observation", label: "观察" },
@@ -17,23 +27,59 @@ const filters: Array<{ value: FilterValue; label: string }> = [
   { value: "data_insufficient", label: "数据不足" },
 ];
 
+const treatmentFilters: Array<{ value: TreatmentFilter; label: string }> = [
+  { value: "all", label: "全部" },
+  { value: "pending", label: "待处理" },
+  { value: "in_progress", label: "处理中" },
+  { value: "checked", label: "已查看" },
+  { value: "follow_up", label: "已跟进" },
+  { value: "none", label: "无任务" },
+];
+
 export const InstitutionPage = () => {
   const { state } = useDemo();
   const [filter, setFilter] = useState<FilterValue>("all");
+  const [treatmentFilter, setTreatmentFilter] = useState<TreatmentFilter>("all");
 
   const rows = useMemo<HeatmapRow[]>(() => {
     return Object.values(state.profiles)
-      .map((profile) => ({
-        profile,
-        risk: getRiskForElder(state, profile.elderId),
-        task: getTaskForElder(state, profile.elderId),
-        operationalState: state.operationalStates[profile.elderId] ?? "normal",
-      }))
+      .map((profile) => {
+        const events = getEventsForElder(state, profile.elderId);
+        const risk = getRiskForElder(state, profile.elderId);
+        const careLoopStatus = deriveCareLoopStatus(profile.elderId, state.tasks, events);
+        const displayStatus = deriveDisplayStatus(risk, careLoopStatus);
+        return {
+          profile,
+          risk,
+          displayStatus,
+          careLoopStatus,
+          task:
+            getActiveTaskForElder(state, profile.elderId) ??
+            getTaskForElder(state, profile.elderId),
+          operationalState: state.operationalStates[profile.elderId] ?? "normal",
+          recentCareRecord: getRecentCareRecord(profile.elderId, state.tasks, state.events),
+        };
+      })
       .sort((a, b) => riskOrder[b.risk.riskLevel] - riskOrder[a.risk.riskLevel]);
   }, [state]);
 
-  const filteredRows =
-    filter === "all" ? rows : rows.filter((row) => row.risk.riskLevel === filter);
+  const matchesTreatment = (row: HeatmapRow) => {
+    if (treatmentFilter === "all") return true;
+    if (treatmentFilter === "pending") return row.careLoopStatus === "pending";
+    if (treatmentFilter === "in_progress") return row.careLoopStatus === "in_progress";
+    if (treatmentFilter === "checked") {
+      return ["checked", "medication_confirmed"].includes(row.careLoopStatus);
+    }
+    if (treatmentFilter === "follow_up") {
+      return ["completed", "follow_up"].includes(row.careLoopStatus);
+    }
+    return row.careLoopStatus === "none";
+  };
+
+  const filteredRows = rows.filter(
+    (row) =>
+      (filter === "all" || row.risk.riskLevel === filter) && matchesTreatment(row),
+  );
   const highRiskCount = rows.filter((row) =>
     ["high_risk", "urgent"].includes(row.risk.riskLevel),
   ).length;
@@ -88,6 +134,17 @@ export const InstitutionPage = () => {
                 className={filter === item.value ? "active" : ""}
                 key={item.value}
                 onClick={() => setFilter(item.value)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <div className="filter-row">
+            {treatmentFilters.map((item) => (
+              <button
+                className={treatmentFilter === item.value ? "active" : ""}
+                key={item.value}
+                onClick={() => setTreatmentFilter(item.value)}
               >
                 {item.label}
               </button>

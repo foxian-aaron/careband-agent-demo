@@ -1,37 +1,36 @@
 import { FamilyPeaceCard } from "../components/FamilyPeaceCard";
 import { MedicalDisclaimer } from "../components/MedicalDisclaimer";
-import { getEventsForElder, getRiskForElder, getTaskForElder, useDemo } from "../store/demoStore";
+import { deriveCareLoopStatus, deriveDisplayStatus } from "../lib/displayStatus";
+import { buildFamilyStatusMessage } from "../lib/familyCopy";
+import {
+  getActiveTaskForElder,
+  getEventsForElder,
+  getRiskForElder,
+  useDemo,
+} from "../store/demoStore";
 
 interface FamilyPageProps {
   elderId: string;
 }
-
-const buildExceptionText = (
-  hasSymptom: boolean,
-  taskStatus: string | undefined,
-  operationalState: string,
-) => {
-  if (operationalState === "follow_up" || taskStatus === "completed") {
-    return "护工已查看陈伯，晚药已确认，目前陈伯在房间休息，系统将继续观察明早活动与睡眠情况。";
-  }
-  if (taskStatus === "in_progress") {
-    return "护工已接单，正在查看陈伯情况。";
-  }
-  if (hasSymptom) {
-    return "今晚 20:15，陈伯反馈有点头晕。系统发现他今天活动量较平时偏低，晚药尚未确认。护工已收到提醒。";
-  }
-  return "陈伯今日活动量较平时偏低，晚药尚未确认，护工端已收到关注提醒。";
-};
 
 export const FamilyPage = ({ elderId }: FamilyPageProps) => {
   const { state } = useDemo();
   const profile = state.profiles[elderId] ?? state.profiles.E001;
   const snapshot = state.snapshots[profile.elderId];
   const risk = getRiskForElder(state, profile.elderId);
-  const task = getTaskForElder(state, profile.elderId);
+  const task = getActiveTaskForElder(state, profile.elderId);
   const events = getEventsForElder(state, profile.elderId);
-  const operationalState = state.operationalStates[profile.elderId] ?? "normal";
-  const hasSymptom = events.some((event) => event.eventType === "voice_symptom");
+  const careLoopStatus = deriveCareLoopStatus(profile.elderId, state.tasks, events);
+  const displayStatus = deriveDisplayStatus(risk, careLoopStatus);
+  const exceptionText = buildFamilyStatusMessage(
+    profile,
+    risk,
+    displayStatus,
+    snapshot,
+    events,
+    task,
+    careLoopStatus,
+  );
 
   return (
     <div className="page family-page">
@@ -46,9 +45,10 @@ export const FamilyPage = ({ elderId }: FamilyPageProps) => {
         profile={profile}
         snapshot={snapshot}
         risk={risk}
+        displayStatus={displayStatus}
+        careLoopStatus={careLoopStatus}
         task={task}
-        operationalState={operationalState}
-        exceptionText={buildExceptionText(hasSymptom, task?.status, operationalState)}
+        exceptionText={exceptionText}
       />
       <section className="panel gentle-summary">
         <div className="section-title">

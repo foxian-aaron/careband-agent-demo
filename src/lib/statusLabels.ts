@@ -4,6 +4,7 @@ import type {
   OperationalState,
   RiskLevel,
 } from "../types";
+import type { CareLoopStatus } from "./displayStatus";
 
 export const medicalDisclaimer =
   "本系统仅用于照护风险提示，不构成医疗诊断。如出现持续不适或紧急情况，请由照护人员或专业医疗人员判断处理。";
@@ -64,6 +65,16 @@ export const priorityLabels: Record<string, string> = {
 export const taskStatusLabels: Record<string, string> = {
   pending: "待处理",
   in_progress: "处理中",
+  completed: "已完成",
+};
+
+export const careLoopLabels: Record<CareLoopStatus, string> = {
+  none: "无任务",
+  pending: "待处理",
+  in_progress: "处理中",
+  checked: "已查看",
+  medication_confirmed: "晚药已确认",
+  follow_up: "已跟进 / 持续观察",
   completed: "已完成",
 };
 

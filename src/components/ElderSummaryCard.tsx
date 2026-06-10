@@ -1,5 +1,8 @@
 import type { CareTask, ElderProfile, OperationalState, RiskResult } from "../types";
+import type { CareLoopStatus, DisplayStatus } from "../lib/displayStatus";
+import { displayToneToPillTone } from "../lib/displayStatus";
 import {
+  careLoopLabels,
   operationalLabels,
   priorityLabels,
   taskStatusLabels,
@@ -10,6 +13,8 @@ import { StatusPill } from "./StatusPill";
 interface ElderSummaryCardProps {
   profile: ElderProfile;
   risk: RiskResult;
+  displayStatus: DisplayStatus;
+  careLoopStatus: CareLoopStatus;
   operationalState: OperationalState;
   task?: CareTask;
 }
@@ -17,6 +22,8 @@ interface ElderSummaryCardProps {
 export const ElderSummaryCard = ({
   profile,
   risk,
+  displayStatus,
+  careLoopStatus,
   operationalState,
   task,
 }: ElderSummaryCardProps) => (
@@ -30,8 +37,15 @@ export const ElderSummaryCard = ({
     </div>
     <div className="card-actions">
       <RiskBadge level={risk.riskLevel} score={risk.riskScore} />
-      <StatusPill label={operationalLabels[operationalState]} tone="muted" />
+      <StatusPill
+        label={displayStatus.shortLabel}
+        tone={displayToneToPillTone(displayStatus.tone)}
+      />
     </div>
+    <p className="muted-copy">
+      前台状态：{displayStatus.label} · 闭环：{careLoopLabels[careLoopStatus]} · 运营：
+      {operationalLabels[operationalState]}
+    </p>
     <ul>
       {risk.keyReasons.slice(0, 3).map((reason) => (
         <li key={reason}>{reason}</li>

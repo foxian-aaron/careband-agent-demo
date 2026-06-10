@@ -26,6 +26,8 @@ const symptomKeywords = [
   "喘不过气",
 ];
 
+const severeSymptomKeywords = ["救命", "摔倒了", "胸口痛", "喘不过气", "动不了"];
+
 const clampScore = (score: number) => Math.max(0, Math.min(100, Math.round(score)));
 
 const toHoursDiff = (baseline: number, current: number) =>
@@ -39,15 +41,55 @@ const getRiskLevelFromScore = (score: number): RiskLevel => {
   return "stable";
 };
 
-const hasSymptomEvent = (events: CareEvent[]) =>
+const createBaseDimensions = (snapshot: DailySnapshot): RiskDimensions => ({
+  vitals: snapshot.heartRate === null ? "data_insufficient" : "normal",
+  activity: snapshot.stepsToday === null ? "data_insufficient" : "normal",
+  sleep: snapshot.sleepDuration === null ? "data_insufficient" : "normal",
+  medication:
+    snapshot.medicationMorning === "confirmed" ||
+    snapshot.medicationEvening === "confirmed"
+      ? "confirmed"
+      : "normal",
+  safety:
+    snapshot.safeZoneStatus === "unknown" ? "data_insufficient" : "normal",
+});
+
+const eventText = (event: CareEvent) =>
+  [event.rawText, ...(event.payload?.symptomKeywords ?? [])].filter(Boolean).join(" ");
+
+const hasKeyword = (event: CareEvent, keywords: string[]) =>
+  keywords.some((keyword) => eventText(event).includes(keyword));
+
+const findSymptomEvent = (events: CareEvent[], keywords = symptomKeywords) =>
   events.find(
-    (event) =>
-      event.eventType === "voice_symptom" &&
-      symptomKeywords.some((keyword) => event.rawText?.includes(keyword)),
+    (event) => event.eventType === "voice_symptom" && hasKeyword(event, keywords),
   );
 
-const hasEventType = (events: CareEvent[], type: CareEvent["eventType"]) =>
-  events.some((event) => event.eventType === type);
+const confidence = (snapshot: DailySnapshot, baseline: PersonalBaseline) =>
+  Number(Math.min(snapshot.dataCompleteness, baseline.baselineConfidence).toFixed(2));
+
+const hardResult = (
+  profile: ElderProfile,
+  baseline: PersonalBaseline,
+  snapshot: DailySnapshot,
+  riskLevel: RiskLevel,
+  riskScore: number,
+  dimensions: RiskDimensions,
+  keyReasons: string[],
+  triggeredRules: string[],
+  recommendedAction: string,
+): RiskResult => ({
+  elderId: profile.elderId,
+  riskLevel,
+  riskScore: clampScore(riskScore),
+  dimensions,
+  keyReasons,
+  triggeredRules,
+  recommendedAction,
+  dataCompleteness: snapshot.dataCompleteness,
+  confidence: confidence(snapshot, baseline),
+  medicalDisclaimer,
+});
 
 export const calculateRisk = ({
   profile,
@@ -55,6 +97,92 @@ export const calculateRisk = ({
   snapshot,
   events,
 }: RiskInput): RiskResult => {
+  const dimensions = createBaseDimensions(snapshot);
+  const sosEvent = events.find((event) => event.eventType === "sos");
+  const fallEvent = events.find((event) => event.eventType === "fall_detected");
+  const locationOutsideEvent = events.find(
+    (event) =>
+      event.eventType === "location_alert" &&
+      event.payload?.safeZoneStatus === "outside",
+  );
+  const severeVoiceEvent = findSymptomEvent(events, severeSymptomKeywords);
+
+  if (sosEvent) {
+    dimensions.safety = "high_risk";
+    const keyReasons = ["触发 SOS 求助事件"];
+    if (snapshot.dataCompleteness < 0.4) {
+      keyReasons.push("虽然今日数据完整度不足，但老人触发了 SOS，需优先按应急流程处理。");
+    }
+    return hardResult(
+      profile,
+      baseline,
+      snapshot,
+      "urgent",
+      95,
+      dimensions,
+      keyReasons,
+      ["R8 SOS 事件直接进入紧急流程"],
+      "立即通知护工和机构负责人，并按机构应急流程处理。",
+    );
+  }
+
+  if (snapshot.fallDetected || fallEvent) {
+    dimensions.safety = "high_risk";
+    const noResponseSeconds = fallEvent?.payload?.noResponseSeconds ?? 0;
+    const isUrgent = noResponseSeconds >= 30;
+    return hardResult(
+      profile,
+      baseline,
+      snapshot,
+      isUrgent ? "urgent" : "high_risk",
+      isUrgent ? 92 : 78,
+      dimensions,
+      [
+        isUrgent
+          ? `检测到跌倒相关事件，且 ${noResponseSeconds} 秒内未确认回应`
+          : "检测到跌倒相关事件，需照护人员确认现场情况",
+      ],
+      [
+        isUrgent
+          ? "R8 跌倒事件 + 未回应升级为紧急"
+          : "R8 跌倒事件触发高风险",
+      ],
+      isUrgent
+        ? "立即通知护工和机构负责人，并按机构应急流程处理。"
+        : "请护工立即查看现场情况，并确认是否需要联系专业人员判断。",
+    );
+  }
+
+  if (locationOutsideEvent) {
+    dimensions.safety = "high_risk";
+    return hardResult(
+      profile,
+      baseline,
+      snapshot,
+      "high_risk",
+      80,
+      dimensions,
+      ["位置事件显示已离开预设安全区域"],
+      ["R8 安全区域离开触发高风险"],
+      "请护工立即确认长者当前位置，并按机构安全巡查流程处理。",
+    );
+  }
+
+  if (severeVoiceEvent?.rawText) {
+    dimensions.safety = "high_risk";
+    return hardResult(
+      profile,
+      baseline,
+      snapshot,
+      "urgent",
+      90,
+      dimensions,
+      [`老人主动反馈：${severeVoiceEvent.rawText}`],
+      ["R8 严重主诉关键词直接进入紧急流程"],
+      "立即通知护工和机构负责人，并按机构应急流程处理。",
+    );
+  }
+
   if (snapshot.dataCompleteness < 0.4) {
     return {
       elderId: profile.elderId,
@@ -68,7 +196,7 @@ export const calculateRisk = ({
         safety: "data_insufficient",
       },
       keyReasons: ["今日数据完整度不足，需先确认设备佩戴或数据同步"],
-      triggeredRules: ["数据完整度低于 40%"],
+      triggeredRules: ["R1 数据完整度低于 40%"],
       recommendedAction:
         "请先确认设备佩戴和数据同步，再由照护人员结合现场情况判断是否需要跟进。",
       dataCompleteness: snapshot.dataCompleteness,
@@ -80,18 +208,6 @@ export const calculateRisk = ({
   let score = 5;
   const keyReasons: string[] = [];
   const triggeredRules: string[] = [];
-  const dimensions: RiskDimensions = {
-    vitals: "normal",
-    activity: "normal",
-    sleep: "normal",
-    medication:
-      snapshot.medicationMorning === "confirmed" ||
-      snapshot.medicationEvening === "confirmed"
-        ? "confirmed"
-        : "normal",
-    safety: "normal",
-  };
-
   const stepsToday = snapshot.stepsToday;
   const activeDrop =
     stepsToday !== null &&
@@ -107,12 +223,12 @@ export const calculateRisk = ({
     const dropPercent = Math.round((1 - stepsToday / baseline.avgSteps7d) * 100);
     dimensions.activity = "significantly_low";
     keyReasons.push(`今日步数低于本人 7 日平均约 ${dropPercent}%`);
-    triggeredRules.push("步数明显低于个人基线");
+    triggeredRules.push("R2 活动明显下降");
     score += 20;
   } else if (mildActivityDrop) {
     dimensions.activity = "below_baseline";
     keyReasons.push("今日活动量低于本人近期基线，建议继续观察");
-    triggeredRules.push("活动量低于个人基线");
+    triggeredRules.push("R2 活动低于个人基线");
     score += 15;
   }
 
@@ -127,19 +243,19 @@ export const calculateRisk = ({
         snapshot.sleepDuration,
       )} 小时`,
     );
-    triggeredRules.push("睡眠低于个人基线 1.5 小时以上");
+    triggeredRules.push("R3 睡眠偏低");
     score += 15;
   }
 
   if (snapshot.medicationEvening === "not_confirmed") {
     dimensions.medication = "not_confirmed";
     keyReasons.push("晚药尚未确认");
-    triggeredRules.push("晚药提醒后未确认");
+    triggeredRules.push("R4 晚药未确认");
     score += 15;
   } else if (snapshot.medicationEvening === "delayed") {
     dimensions.medication = "needs_attention";
     keyReasons.push("晚药确认延迟，建议复核");
-    triggeredRules.push("晚药确认延迟");
+    triggeredRules.push("R4 晚药确认延迟");
     score += 8;
   }
 
@@ -155,8 +271,6 @@ export const calculateRisk = ({
     );
     triggeredRules.push("心率较个人静息基线偏高");
     score += 5;
-  } else if (snapshot.heartRate === null) {
-    dimensions.vitals = "data_insufficient";
   }
 
   if (snapshot.safeZoneStatus === "outside") {
@@ -164,27 +278,37 @@ export const calculateRisk = ({
     keyReasons.push("当前位置已离开预设安全区域");
     triggeredRules.push("安全区域异常");
     score += 20;
-  } else if (snapshot.safeZoneStatus === "unknown") {
-    dimensions.safety = "data_insufficient";
   }
 
-  if (events.some((event) => event.title.includes("夜间离床"))) {
+  const nightWakeupEvent = events.find((event) => event.eventType === "night_wakeup");
+  if (nightWakeupEvent) {
     dimensions.safety = "needs_attention";
-    keyReasons.push("夜间离床次数较平时增加");
+    keyReasons.push(
+      `夜间离床次数较平时增加${
+        nightWakeupEvent.payload?.nightWakeupCount
+          ? `，记录 ${nightWakeupEvent.payload.nightWakeupCount} 次`
+          : ""
+      }`,
+    );
     triggeredRules.push("夜间离床关注");
     score += 15;
   }
 
-  if (events.some((event) => event.title.includes("连续两天下降"))) {
-    keyReasons.push("活动量连续两天下降，但暂无主诉和用药异常");
+  const lowActivityEvent = events.find((event) => event.eventType === "low_activity");
+  if (lowActivityEvent) {
+    keyReasons.push(
+      lowActivityEvent.payload?.activityDropPercent
+        ? `活动量连续下降，较平时下降约 ${lowActivityEvent.payload.activityDropPercent}%`
+        : "活动量连续下降，但暂无主诉和用药异常",
+    );
     triggeredRules.push("活动趋势连续下降");
     score += 5;
   }
 
-  const symptomEvent = hasSymptomEvent(events);
+  const symptomEvent = findSymptomEvent(events);
   if (symptomEvent?.rawText) {
     keyReasons.push(`老人主动反馈：${symptomEvent.rawText}`);
-    triggeredRules.push("识别到老人主动反馈不适");
+    triggeredRules.push("R5 主诉症状");
     score += 25;
   }
 
@@ -194,12 +318,10 @@ export const calculateRisk = ({
       (condition) => condition === "高血压" || condition === "冠心病史",
     )
   ) {
-    triggeredRules.push("慢病标签 + 主诉不适，提升关注优先级");
+    triggeredRules.push("R6 慢病标签 + 主诉不适，提升关注优先级");
     score += 10;
   }
 
-  const hasSos = hasEventType(events, "sos");
-  const hasFall = snapshot.fallDetected || hasEventType(events, "fall_detected");
   const comboHighRisk =
     activeDrop &&
     snapshot.medicationEvening === "not_confirmed" &&
@@ -210,33 +332,19 @@ export const calculateRisk = ({
         ),
     );
 
-  if (hasFall) {
-    dimensions.safety = "high_risk";
-    keyReasons.push("检测到跌倒相关事件，需照护人员确认现场情况");
-    triggeredRules.push("跌倒事件触发高风险");
-    score = Math.max(score, 75);
-  }
-
-  if (hasSos) {
-    dimensions.safety = "high_risk";
-    keyReasons.push("触发 SOS 求助事件");
-    triggeredRules.push("SOS 直接升级为紧急");
-    score = Math.max(score, 90);
+  if (comboHighRisk) {
+    triggeredRules.push("R7 组合高风险");
+    score = Math.max(score, 76);
   }
 
   if (keyReasons.length === 0) {
     keyReasons.push("今日状态接近本人近期基线");
-    triggeredRules.push("未发现明显偏离个人基线");
+    triggeredRules.push("R9 未发现明显偏离个人基线");
   }
 
-  let riskScore = clampScore(score);
-  if (!hasSos) {
-    riskScore = Math.min(riskScore, 89);
-  }
-
+  const riskScore = Math.min(clampScore(score), 89);
   let riskLevel = getRiskLevelFromScore(riskScore);
-  if (hasSos) riskLevel = "urgent";
-  if (!hasSos && (comboHighRisk || hasFall)) riskLevel = "high_risk";
+  if (comboHighRisk) riskLevel = "high_risk";
 
   let recommendedAction = "保持常规照护与日常观察。";
   if (riskLevel === "observation") {
@@ -253,10 +361,6 @@ export const calculateRisk = ({
     recommendedAction =
       "立即通知护工和机构负责人，并按机构应急流程处理。";
   }
-  if (comboHighRisk) {
-    recommendedAction =
-      "请护工立即查看，确认是否已进食和服药，并观察不适是否持续。";
-  }
 
   return {
     elderId: profile.elderId,
@@ -267,9 +371,7 @@ export const calculateRisk = ({
     triggeredRules,
     recommendedAction,
     dataCompleteness: snapshot.dataCompleteness,
-    confidence: Number(
-      Math.min(snapshot.dataCompleteness, baseline.baselineConfidence).toFixed(2),
-    ),
+    confidence: confidence(snapshot, baseline),
     medicalDisclaimer,
   };
 };

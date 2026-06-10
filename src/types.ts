@@ -90,7 +90,10 @@ export interface CareEvent {
     | "sos"
     | "fall_detected"
     | "location_alert"
+    | "night_wakeup"
+    | "low_activity"
     | "caregiver_accepted"
+    | "caregiver_checked"
     | "caregiver_completed"
     | "system_risk_update";
   timestamp: string;
@@ -98,6 +101,23 @@ export interface CareEvent {
   rawText?: string;
   source: "demo" | "mock_wearable" | "caregiver" | "system";
   severity?: RiskLevel;
+  payload?: {
+    symptomKeywords?: string[];
+    medicationName?: string;
+    locationZone?: string;
+    safeZoneStatus?: "inside" | "outside" | "unknown";
+    nightWakeupCount?: number;
+    activityDropPercent?: number;
+    noResponseSeconds?: number;
+    note?: string;
+    previousValue?: number | string;
+    currentValue?: number | string;
+  };
+  status?: "open" | "acknowledged" | "resolved";
+  linkedTaskId?: string;
+  handledBy?: string;
+  handledAt?: string;
+  confidence?: number;
 }
 
 export interface RiskDimensions {

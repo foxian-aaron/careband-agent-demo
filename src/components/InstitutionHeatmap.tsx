@@ -5,10 +5,14 @@ import type {
   OperationalState,
   RiskResult,
 } from "../types";
+import type { CareLoopStatus, DisplayStatus } from "../lib/displayStatus";
+import { displayToneToPillTone } from "../lib/displayStatus";
 import {
+  careLoopLabels,
   dimensionLabels,
   dimensionTone,
   operationalLabels,
+  riskLabels,
   taskStatusLabels,
 } from "../lib/statusLabels";
 import { RiskBadge } from "./RiskBadge";
@@ -17,8 +21,11 @@ import { StatusPill } from "./StatusPill";
 export interface HeatmapRow {
   profile: ElderProfile;
   risk: RiskResult;
+  displayStatus: DisplayStatus;
+  careLoopStatus: CareLoopStatus;
   task?: CareTask;
   operationalState: OperationalState;
+  recentCareRecord?: string;
 }
 
 interface InstitutionHeatmapProps {
@@ -44,18 +51,20 @@ export const InstitutionHeatmap = ({ rows }: InstitutionHeatmapProps) => (
         <tr>
           <th>老人</th>
           <th>房间</th>
-          <th>总状态</th>
+          <th>前台展示状态</th>
+          <th>今日风险等级</th>
           <th>生命体征</th>
           <th>活动</th>
           <th>睡眠</th>
           <th>用药</th>
           <th>安全</th>
           <th>任务状态</th>
+          <th>最近处理记录</th>
           <th>操作</th>
         </tr>
       </thead>
       <tbody>
-        {rows.map(({ profile, risk, task, operationalState }) => (
+        {rows.map(({ profile, risk, displayStatus, careLoopStatus, task, operationalState, recentCareRecord }) => (
           <tr key={profile.elderId}>
             <td>
               <strong>{profile.name}</strong>
@@ -63,7 +72,17 @@ export const InstitutionHeatmap = ({ rows }: InstitutionHeatmapProps) => (
             </td>
             <td>{profile.room}</td>
             <td>
+              <StatusPill
+                label={displayStatus.label}
+                tone={displayToneToPillTone(displayStatus.tone)}
+              />
+              {displayStatus.shouldShowHistoricalRisk ? (
+                <span>今日曾出现高风险事件</span>
+              ) : null}
+            </td>
+            <td>
               <RiskBadge level={risk.riskLevel} score={risk.riskScore} />
+              <span>{riskLabels[risk.riskLevel]}</span>
             </td>
             <DimensionCell
               label={dimensionLabels[risk.dimensions.vitals]}
@@ -86,8 +105,12 @@ export const InstitutionHeatmap = ({ rows }: InstitutionHeatmapProps) => (
               status={risk.dimensions.safety}
             />
             <td>
-              <strong>{operationalLabels[operationalState]}</strong>
+              <strong>{careLoopLabels[careLoopStatus]}</strong>
               {task ? <span>{taskStatusLabels[task.status]}</span> : null}
+              <span>运营：{operationalLabels[operationalState]}</span>
+            </td>
+            <td>
+              <span>{recentCareRecord || "暂无处理记录"}</span>
             </td>
             <td>
               <a className="text-button" href={`#/elder/${profile.elderId}`}>

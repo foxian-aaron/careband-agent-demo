@@ -3,16 +3,28 @@ import { mockBaselines } from "../data/mockBaselines";
 import { mockEvents } from "../data/mockEvents";
 import { mockProfiles } from "../data/mockProfiles";
 import { mockSnapshots } from "../data/mockSnapshots";
+import { deriveCareLoopStatus, deriveDisplayStatus } from "../lib/displayStatus";
+import { buildFamilyStatusMessage } from "../lib/familyCopy";
 import { calculateRisk } from "../lib/riskEngine";
-import type { CareEvent } from "../types";
+import {
+  createInitialDemoState,
+  demoReducer,
+  getEventsForElder,
+  getRiskForElder,
+} from "../store/demoStore";
+import type { CareEvent, DailySnapshot } from "../types";
 
 const byId = <T extends { elderId: string }>(items: T[], elderId: string) =>
   items.find((item) => item.elderId === elderId)!;
 
-const inputFor = (elderId: string, extraEvents: CareEvent[] = []) => ({
+const inputFor = (
+  elderId: string,
+  extraEvents: CareEvent[] = [],
+  snapshotOverride?: Partial<DailySnapshot>,
+) => ({
   profile: byId(mockProfiles, elderId),
   baseline: byId(mockBaselines, elderId),
-  snapshot: byId(mockSnapshots, elderId),
+  snapshot: { ...byId(mockSnapshots, elderId), ...snapshotOverride },
   events: [
     ...mockEvents.filter((event) => event.elderId === elderId),
     ...extraEvents,
@@ -41,6 +53,9 @@ describe("riskEngine", () => {
       rawText: "我有点头晕",
       source: "demo",
       severity: "high_risk",
+      payload: {
+        symptomKeywords: ["头晕"],
+      },
     };
     const result = calculateRisk(inputFor("E001", [voiceEvent]));
     const reasons = result.keyReasons.join("；");
@@ -82,10 +97,156 @@ describe("riskEngine", () => {
     expect(result.riskScore).toBeGreaterThanOrEqual(90);
   });
 
+  it("keeps SOS urgent even when data completeness is below 40 percent", () => {
+    const sosEvent: CareEvent = {
+      eventId: "TEST-SOS-DATA-GAP",
+      elderId: "E001",
+      eventType: "sos",
+      timestamp: "2026-06-10T20:18:00+08:00",
+      title: "SOS 测试事件",
+      source: "demo",
+      severity: "urgent",
+    };
+    const result = calculateRisk(inputFor("E001", [sosEvent], { dataCompleteness: 0.32 }));
+
+    expect(result.riskLevel).toBe("urgent");
+    expect(result.riskScore).toBeGreaterThanOrEqual(90);
+    expect(result.keyReasons.join("；")).toContain("SOS");
+    expect(result.keyReasons.join("；")).toContain("优先按应急流程处理");
+  });
+
+  it("returns urgent for fall_detected with no response >= 30 seconds", () => {
+    const fallEvent: CareEvent = {
+      eventId: "TEST-FALL-NO-RESPONSE",
+      elderId: "E001",
+      eventType: "fall_detected",
+      timestamp: "2026-06-10T20:19:00+08:00",
+      title: "跌倒检测后未回应",
+      source: "mock_wearable",
+      severity: "urgent",
+      payload: {
+        noResponseSeconds: 35,
+      },
+    };
+    const result = calculateRisk(inputFor("E001", [fallEvent]));
+
+    expect(result.riskLevel).toBe("urgent");
+    expect(result.riskScore).toBeGreaterThanOrEqual(90);
+  });
+
   it("keeps medical disclaimer and avoids diagnostic wording", () => {
     const result = calculateRisk(inputFor("E001"));
 
     expect(result.medicalDisclaimer).toBeTruthy();
-    expect(result.recommendedAction).not.toMatch(/患有|确诊|疾病判断/);
+    expect(result.recommendedAction).not.toMatch(/患有|确诊|诊断为|可能得了|疾病判断/);
+  });
+});
+
+describe("displayStatus", () => {
+  const voiceEvent: CareEvent = {
+    eventId: "TEST-DISPLAY-DIZZINESS",
+    elderId: "E001",
+    eventType: "voice_symptom",
+    timestamp: "2026-06-10T20:15:00+08:00",
+    title: "语音反馈：我有点头晕",
+    rawText: "我有点头晕",
+    source: "demo",
+    severity: "high_risk",
+    payload: {
+      symptomKeywords: ["头晕"],
+    },
+  };
+  const highRisk = calculateRisk(inputFor("E001", [voiceEvent]));
+
+  it("maps high risk + pending task to 高风险待处理", () => {
+    const display = deriveDisplayStatus(highRisk, "pending");
+    expect(display.label).toBe("高风险待处理");
+  });
+
+  it("maps high risk + in_progress task to 高风险处理中", () => {
+    const display = deriveDisplayStatus(highRisk, "in_progress");
+    expect(display.label).toBe("高风险处理中");
+  });
+
+  it("maps high risk + completed task to 已跟进 / 持续观察", () => {
+    const display = deriveDisplayStatus(highRisk, "completed");
+    expect(display.label).toBe("已跟进 / 持续观察");
+  });
+});
+
+describe("demoStore reducer", () => {
+  it("adds caregiver_checked event for CAREGIVER_MARK_VIEWED", () => {
+    const afterViewed = demoReducer(
+      demoReducer(
+        demoReducer(createInitialDemoState(), { type: "TRIGGER_CHEN_DIZZINESS" }),
+        { type: "CAREGIVER_ACCEPT_TASK" },
+      ),
+      { type: "CAREGIVER_MARK_VIEWED" },
+    );
+
+    expect(
+      afterViewed.events.some((event) => event.eventType === "caregiver_checked"),
+    ).toBe(true);
+    expect(
+      afterViewed.events.filter((event) => event.eventType === "caregiver_accepted"),
+    ).toHaveLength(1);
+  });
+
+  it("completes active care task and keeps caregiver note", () => {
+    let state = createInitialDemoState();
+    state = demoReducer(state, { type: "TRIGGER_CHEN_DIZZINESS" });
+    state = demoReducer(state, { type: "CAREGIVER_ACCEPT_TASK" });
+    state = demoReducer(state, { type: "CAREGIVER_MARK_VIEWED" });
+    state = demoReducer(state, { type: "CONFIRM_EVENING_MEDICATION" });
+    state = demoReducer(state, { type: "COMPLETE_CARE_TASK" });
+
+    const completedTask = state.tasks.find((task) => task.elderId === "E001");
+    expect(completedTask?.status).toBe("completed");
+    expect(completedTask?.note).toContain("护工A已查看陈伯");
+    expect(state.events.some((event) => event.eventType === "caregiver_completed")).toBe(true);
+  });
+});
+
+describe("familyCopy", () => {
+  it("uses profile.name instead of hardcoded Chen", () => {
+    const profile = { ...byId(mockProfiles, "E001"), name: "王叔" };
+    const risk = calculateRisk(inputFor("E001"));
+    const display = deriveDisplayStatus(risk, "none");
+    const message = buildFamilyStatusMessage(
+      profile,
+      risk,
+      display,
+      byId(mockSnapshots, "E001"),
+      mockEvents.filter((event) => event.elderId === "E001"),
+    );
+
+    expect(message).toContain("王叔");
+    expect(message).not.toContain("陈伯");
+  });
+
+  it("mentions viewed and medication confirmed after completion", () => {
+    let state = createInitialDemoState();
+    state = demoReducer(state, { type: "TRIGGER_CHEN_DIZZINESS" });
+    state = demoReducer(state, { type: "CAREGIVER_ACCEPT_TASK" });
+    state = demoReducer(state, { type: "CAREGIVER_MARK_VIEWED" });
+    state = demoReducer(state, { type: "CONFIRM_EVENING_MEDICATION" });
+    state = demoReducer(state, { type: "COMPLETE_CARE_TASK" });
+
+    const events = getEventsForElder(state, "E001");
+    const risk = getRiskForElder(state, "E001");
+    const careLoopStatus = deriveCareLoopStatus("E001", state.tasks, events);
+    const display = deriveDisplayStatus(risk, careLoopStatus);
+    const message = buildFamilyStatusMessage(
+      state.profiles.E001,
+      risk,
+      display,
+      state.snapshots.E001,
+      events,
+      undefined,
+      careLoopStatus,
+    );
+
+    expect(message).toContain("已查看");
+    expect(message).toContain("晚药已确认");
   });
 });

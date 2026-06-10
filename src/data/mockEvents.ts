@@ -30,11 +30,14 @@ export const mockEvents: CareEvent[] = [
   {
     eventId: "EVT-E001-ACTIVITY-LOW",
     elderId: "E001",
-    eventType: "system_risk_update",
+    eventType: "low_activity",
     timestamp: "2026-06-10T12:30:00+08:00",
     title: "活动量开始偏低",
     source: "system",
     severity: "attention",
+    payload: {
+      activityDropPercent: 62,
+    },
   },
   {
     eventId: "EVT-E001-MED-PM-REMINDER",
@@ -57,20 +60,26 @@ export const mockEvents: CareEvent[] = [
   {
     eventId: "EVT-E002-NIGHT-AWAY",
     elderId: "E002",
-    eventType: "location_alert",
+    eventType: "night_wakeup",
     timestamp: "2026-06-10T03:20:00+08:00",
     title: "夜间离床次数增加",
     source: "mock_wearable",
     severity: "attention",
+    payload: {
+      nightWakeupCount: 4,
+    },
   },
   {
     eventId: "EVT-E003-ACTIVITY-TREND",
     elderId: "E003",
-    eventType: "system_risk_update",
+    eventType: "low_activity",
     timestamp: "2026-06-10T17:40:00+08:00",
     title: "活动量连续两天下降",
     source: "system",
     severity: "observation",
+    payload: {
+      activityDropPercent: 28,
+    },
   },
   {
     eventId: "EVT-E004-STABLE",
@@ -93,19 +102,6 @@ export const mockEvents: CareEvent[] = [
 ];
 
 export const mockTasks: CareTask[] = [
-  {
-    taskId: "TASK-E001-ATTENTION",
-    elderId: "E001",
-    sourceEventId: "EVT-E001-MED-PM-REMINDER",
-    priority: "medium",
-    title: "陈伯晚药与活动需关注",
-    reason: "活动明显下降 + 睡眠偏低 + 晚药未确认",
-    recommendedAction: "请护工在晚间巡查时确认陈伯是否已进食和服药。",
-    assignedTo: "护工A",
-    status: "pending",
-    createdAt: "2026-06-10T20:05:00+08:00",
-    updatedAt: "2026-06-10T20:05:00+08:00",
-  },
   {
     taskId: "TASK-E002-ATTENTION",
     elderId: "E002",
@@ -135,7 +131,7 @@ export const mockTasks: CareTask[] = [
 ];
 
 export const mockOperationalStates: Record<string, OperationalState> = {
-  E001: "pending",
+  E001: "normal",
   E002: "pending",
   E003: "normal",
   E004: "normal",

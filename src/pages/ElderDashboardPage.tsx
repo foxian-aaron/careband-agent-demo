@@ -1,3 +1,4 @@
+import { AgentIOPanel } from "../components/AgentIOPanel";
 import { DecisionTracePanel } from "../components/DecisionTracePanel";
 import { FiveDimensionStatus } from "../components/FiveDimensionStatus";
 import { MedicalDisclaimer } from "../components/MedicalDisclaimer";
@@ -7,6 +8,7 @@ import { StatusPill } from "../components/StatusPill";
 import { Timeline } from "../components/Timeline";
 import { TrendMiniChart } from "../components/TrendMiniChart";
 import { formatDateTime } from "../lib/dateUtils";
+import { deriveCareLoopStatus, deriveDisplayStatus, displayToneToPillTone } from "../lib/displayStatus";
 import {
   medicationLabels,
   operationalLabels,
@@ -47,6 +49,8 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
   const summaries = getAgentSummariesForElder(state, profile.elderId);
   const trend = state.trends[profile.elderId];
   const operationalState = state.operationalStates[profile.elderId] ?? "normal";
+  const careLoopStatus = deriveCareLoopStatus(profile.elderId, state.tasks, events);
+  const displayStatus = deriveDisplayStatus(risk, careLoopStatus);
   const stepDeviation =
     snapshot.stepsToday === null
       ? null
@@ -83,14 +87,21 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
             />
           </div>
         </div>
-        <RiskBadge level={risk.riskLevel} score={risk.riskScore} />
+        <div className="hero-status-stack">
+          <StatusPill
+            label={`前台状态：${displayStatus.label}`}
+            tone={displayToneToPillTone(displayStatus.tone)}
+          />
+          <RiskBadge level={risk.riskLevel} score={risk.riskScore} />
+        </div>
       </header>
 
       <section className="current-state-card">
         <div>
           <span>当前总状态</span>
-          <h2>{riskLabels[risk.riskLevel]}</h2>
+          <h2>{displayStatus.label}</h2>
           <p>当前运营状态：{operationalLabels[operationalState]}</p>
+          <p>今日风险等级：{riskLabels[risk.riskLevel]}</p>
         </div>
         <div>
           <span>风险分数</span>
@@ -252,7 +263,24 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
         </div>
       </section>
 
-      <DecisionTracePanel trace={summaries.decisionTrace} />
+      <DecisionTracePanel
+        baseline={baseline}
+        displayStatus={displayStatus}
+        events={events}
+        profile={profile}
+        risk={risk}
+        snapshot={snapshot}
+        summaries={summaries}
+        trace={summaries.decisionTrace}
+      />
+      <AgentIOPanel
+        baseline={baseline}
+        events={events}
+        profile={profile}
+        risk={risk}
+        snapshot={snapshot}
+        summaries={summaries}
+      />
       <MedicalDisclaimer />
     </div>
   );

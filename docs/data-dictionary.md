@@ -18,7 +18,21 @@
 
 ## CareEvent
 
-照护事件。包含事件 ID、老人 ID、事件类型、时间、标题、原始文本、来源和严重程度。陈伯的头晕反馈、护工接单、晚药确认和完成处理都用事件表达。
+照护事件。包含事件 ID、老人 ID、事件类型、时间、标题、原始文本、来源和严重程度。v0.1.1 扩展了结构化字段，业务逻辑不再依赖 `title.includes(...)`：
+
+- `eventType`：包括 `medication_reminder`、`medication_confirmed`、`voice_symptom`、`sos`、`fall_detected`、`location_alert`、`night_wakeup`、`low_activity`、`caregiver_accepted`、`caregiver_checked`、`caregiver_completed`、`system_risk_update`。
+- `payload.symptomKeywords`：语音主诉识别出的关键词，如“头晕”。
+- `payload.medicationName`：确认的用药项，如“晚药”。
+- `payload.safeZoneStatus`：位置事件中的安全区状态。
+- `payload.nightWakeupCount`：夜间离床次数。
+- `payload.activityDropPercent`：活动下降比例。
+- `payload.noResponseSeconds`：跌倒事件后未回应秒数。
+- `payload.note`：护工处理备注。
+- `payload.previousValue/currentValue`：状态变更前后的值。
+- `status`：事件处理状态，`open`、`acknowledged` 或 `resolved`。
+- `linkedTaskId`：事件关联的护工任务。
+- `handledBy/handledAt`：处理人和处理时间。
+- `confidence`：模拟识别置信度。
 
 ## RiskResult
 
@@ -31,3 +45,9 @@
 ## AgentRoleSummaries
 
 Mock AI Agent 输出。包含护工摘要、家属摘要、机构摘要和 Decision Trace。三端文案由同一份风险结果生成，但面向不同角色。
+
+## careLoopStatus / displayStatus
+
+`careLoopStatus` 是护工闭环状态：无任务、待处理、处理中、已查看、晚药已确认、已完成。
+
+`displayStatus` 是前台展示状态：例如“高风险待处理”“高风险处理中”“已查看 / 待完成记录”“已跟进 / 持续观察”。它与 `riskLevel` 分离，避免家属端在护工完成后仍只看到“高风险”。

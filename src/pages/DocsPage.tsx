@@ -18,8 +18,8 @@ export const DocsPage = () => (
         <li>在 Demo 控制台触发“我有点头晕”语音事件。</li>
         <li>切回护工端，查看高优先级任务“陈伯需要立即查看”。</li>
         <li>切到家属端，展示温和安心卡和“护工已收到提醒”。</li>
-        <li>护工接单、确认晚药、完成处理。</li>
-        <li>回到机构端和家属端，展示“已跟进 / 持续观察”。</li>
+        <li>护工接单、标记已查看、确认晚药、完成处理。</li>
+        <li>回到机构端和家属端，展示“已跟进 / 持续观察”，同时保留今日曾出现高风险事件的说明。</li>
       </ol>
     </section>
 
@@ -27,28 +27,36 @@ export const DocsPage = () => (
       <h2>数据结构说明</h2>
       <p>
         Demo 使用 ElderProfile、PersonalBaseline、DailySnapshot、MedicationPlan、
-        CareEvent、RiskResult、CareTask 和 AgentRoleSummaries 组织数据。风险结果由
-        riskEngine 动态计算，不在页面中写死。
+        CareEvent、RiskResult、CareTask 和 AgentRoleSummaries 组织数据。v0.1.1 扩展
+        CareEvent payload，并新增 careLoopStatus / displayStatus，风险结果由 riskEngine
+        动态计算，不在页面中写死。
       </p>
     </section>
 
     <section className="panel docs-section">
       <h2>风险规则说明</h2>
       <p>
-        规则引擎按数据完整度、个人步数基线、睡眠基线、晚药确认、主动症状反馈、
-        慢病标签、SOS 和跌倒事件计算风险分，并输出可解释原因和建议动作。
+        规则引擎先检查 SOS、跌倒、离开安全区和严重主诉等硬事件；没有硬事件时再判断
+        数据完整度；之后按个人步数基线、睡眠基线、晚药确认、主动症状反馈和慢病标签
+        计算日常偏离，并输出可解释原因和建议动作。
       </p>
     </section>
 
     <section className="panel docs-section">
       <h2>事件流说明</h2>
-      <pre>{`模拟健康数据进入系统
+      <pre>{`模拟数据 / 事件输入
   ↓
-读取老人档案与个人基线
+读取老人档案和个人基线
   ↓
-规则引擎计算偏离程度
+检查硬事件
   ↓
-生成风险等级
+检查数据完整度
+  ↓
+计算日常偏离
+  ↓
+风险引擎输出 riskLevel
+  ↓
+deriveDisplayStatus 输出前台展示状态
   ↓
 Mock AI Agent 生成三端摘要
   ↓
@@ -58,7 +66,7 @@ Mock AI Agent 生成三端摘要
   ↓
 机构端更新热力图
   ↓
-护工处理
+护工接单 / 查看 / 确认用药 / 完成处理
   ↓
 三端同步更新`}</pre>
     </section>
@@ -74,7 +82,7 @@ Mock AI Agent 生成三端摘要
     <section className="panel docs-section">
       <h2>后续接入 QwenPaw / 硬件</h2>
       <p>
-        后续可将 riskEngine 输出、事件摘要和老人基线发送给 QwenPaw 生成真实多角色摘要；
+        陈伯驾驶舱已加入 Mock QwenPaw Agent IO 面板。后续可将 riskEngine 输出、事件摘要和老人基线发送给 QwenPaw 生成真实多角色摘要；
         硬件侧可将手环心率、步数、睡眠、佩戴时间、位置和 SOS 事件映射为 DailySnapshot
         与 CareEvent。
       </p>

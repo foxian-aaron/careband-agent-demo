@@ -22,6 +22,7 @@ export const Timeline = ({ events, compact = false }: TimelineProps) => {
           <div>
             <strong>{event.title}</strong>
             {event.rawText ? <p>原始反馈：{event.rawText}</p> : null}
+            {event.payload?.note ? <p>备注：{event.payload.note}</p> : null}
             {event.severity ? <span>{riskLabels[event.severity]}</span> : null}
           </div>
         </li>

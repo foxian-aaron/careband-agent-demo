@@ -1,4 +1,11 @@
-import type { AgentRoleSummaries, RiskResult } from "../types";
+import type {
+  AgentRoleSummaries,
+  CareEvent,
+  DailySnapshot,
+  ElderProfile,
+  PersonalBaseline,
+  RiskResult,
+} from "../types";
 
 export interface AgentRequest {
   elderId: string;
@@ -36,8 +43,61 @@ export const mapMockSummariesToAgentResponse = (
 ): AgentResponse => ({
   summary: String(summaries[summary]),
   decisionTrace: summaries.decisionTrace,
-  modelName: "mock-agent-v0.1",
+  modelName: "mock-agent-v0.1.1",
   generatedAt: new Date().toISOString(),
+});
+
+export interface MockQwenPawIO {
+  request: Record<string, unknown>;
+  response: Record<string, unknown>;
+}
+
+export const buildMockQwenPawIO = (
+  profile: ElderProfile,
+  baseline: PersonalBaseline,
+  snapshot: DailySnapshot,
+  events: CareEvent[],
+  riskResult: RiskResult,
+  summaries: AgentRoleSummaries,
+): MockQwenPawIO => ({
+  request: {
+    elder: `${profile.name}，${profile.age}岁，${
+      profile.chronicConditions.join("、") || "无慢病标签"
+    }`,
+    baseline: {
+      avgSteps7d: baseline.avgSteps7d,
+      avgSleep7d: baseline.avgSleep7d,
+      restingHrBaseline: baseline.restingHrBaseline,
+    },
+    snapshot: {
+      stepsToday: snapshot.stepsToday,
+      sleepDuration: snapshot.sleepDuration,
+      medicationEvening: snapshot.medicationEvening,
+      dataCompleteness: snapshot.dataCompleteness,
+    },
+    events: events
+      .filter((event) =>
+        ["voice_symptom", "sos", "fall_detected", "location_alert"].includes(
+          event.eventType,
+        ),
+      )
+      .map((event) => ({
+        eventType: event.eventType,
+        rawText: event.rawText,
+        payload: event.payload,
+      })),
+    riskResult: {
+      riskLevel: riskResult.riskLevel,
+      riskScore: riskResult.riskScore,
+    },
+  },
+  response: {
+    caregiverSummary: summaries.caregiverSummary,
+    familySummary: summaries.familySummary,
+    institutionSummary: summaries.institutionSummary,
+    recommendedAction: riskResult.recommendedAction,
+    medicalDisclaimer: riskResult.medicalDisclaimer,
+  },
 });
 
 /*
