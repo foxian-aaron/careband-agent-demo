@@ -65,9 +65,16 @@ button:disabled {
 
 button.primary,
 .primary-link {
+  align-items: center;
   background: #173b57;
   border-color: #173b57;
+  border-radius: 8px;
   color: #ffffff;
+  display: inline-flex;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
 }
 
 .app-shell {
@@ -298,6 +305,124 @@ button.primary,
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.table-actions,
+.page-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.profile-identity,
+.medication-hero {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.profile-identity h1,
+.medication-hero h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05;
+  margin: 6px 0 10px;
+}
+
+.profile-identity p,
+.medication-hero p {
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin: 0 0 12px;
+}
+
+.info-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.info-grid.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.info-grid div {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.info-grid span,
+.risk-summary-head span {
+  color: var(--text-secondary);
+  display: block;
+  font-size: 0.84rem;
+}
+
+.info-grid strong {
+  display: block;
+  margin-top: 6px;
+}
+
+.info-grid p {
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 6px 0 0;
+}
+
+.tag-chip {
+  background: rgba(47, 128, 160, 0.12);
+  border: 1px solid rgba(47, 128, 160, 0.2);
+  border-radius: 999px;
+  color: var(--color-observation);
+  display: inline-flex;
+  font-size: 0.86rem;
+  min-height: 30px;
+  padding: 5px 11px;
+}
+
+.tag-chip--warm {
+  background: rgba(197, 138, 24, 0.12);
+  border-color: rgba(197, 138, 24, 0.2);
+  color: var(--color-attention);
+}
+
+.consent-tags {
+  margin-bottom: 14px;
+}
+
+.risk-summary-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.medication-table small {
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 4px;
+}
+
+.medication-confirm-panel {
+  align-content: start;
+  display: grid;
+  gap: 12px;
+}
+
+.medication-timeline .timeline-status--done {
+  border-left-color: rgba(47, 143, 91, 0.45);
+}
+
+.medication-timeline .timeline-status--pending {
+  border-left-color: rgba(197, 138, 24, 0.45);
+}
+
+.medication-timeline .timeline-status--warning {
+  border-left-color: rgba(221, 107, 32, 0.5);
 }
 
 .risk-badge,
@@ -1009,7 +1134,9 @@ button.primary,
   .five-dimensions,
   .metric-grid,
   .trend-grid,
-  .control-status {
+  .control-status,
+  .info-grid,
+  .info-grid.compact {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1022,7 +1149,9 @@ button.primary,
   .page-header,
   .section-title.with-actions,
   .task-card__head,
-  .family-peace-card__head {
+  .family-peace-card__head,
+  .profile-identity,
+  .medication-hero {
     align-items: stretch;
     flex-direction: column;
   }
@@ -1041,9 +1170,11 @@ button.primary,
   .five-dimensions,
   .control-status,
   .current-state-card,
-  .decision-grid,
-  .trace-output-grid,
-  .agent-io-grid {
+    .decision-grid,
+    .trace-output-grid,
+  .agent-io-grid,
+  .info-grid,
+  .info-grid.compact {
     grid-template-columns: 1fr;
   }
 

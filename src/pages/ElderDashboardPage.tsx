@@ -86,6 +86,14 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
               tone={snapshot.dataCompleteness < 0.4 ? "muted" : "stable"}
             />
           </div>
+          <div className="button-row page-link-row">
+            <a className="text-button" href={`#/elder/${profile.elderId}/profile`}>
+              查看老人档案
+            </a>
+            <a className="text-button" href={`#/medication/${profile.elderId}`}>
+              查看用药计划
+            </a>
+          </div>
         </div>
         <div className="hero-status-stack">
           <StatusPill

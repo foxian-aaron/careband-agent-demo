@@ -41,6 +41,8 @@ export const ElderSummaryCard = ({
         label={displayStatus.shortLabel}
         tone={displayToneToPillTone(displayStatus.tone)}
       />
+      <a className="text-button" href={`#/elder/${profile.elderId}/profile`}>档案</a>
+      <a className="text-button" href={`#/medication/${profile.elderId}`}>用药</a>
     </div>
     <p className="muted-copy">
       前台状态：{displayStatus.label} · 闭环：{careLoopLabels[careLoopStatus]} · 运营：

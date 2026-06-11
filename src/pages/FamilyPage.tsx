@@ -59,6 +59,11 @@ export const FamilyPage = ({ elderId }: FamilyPageProps) => {
           系统会把复杂的步数、睡眠、用药和事件判断转成照护状态，不展示复杂医学指标。
           如有持续不适或紧急情况，将由照护人员或专业医疗人员判断处理。
         </p>
+        <div className="button-row page-link-row">
+          <a className="text-button" href={`#/medication/${profile.elderId}`}>
+            查看今日用药状态
+          </a>
+        </div>
       </section>
       <MedicalDisclaimer />
     </div>

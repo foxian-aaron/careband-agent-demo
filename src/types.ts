@@ -48,11 +48,19 @@ export interface PersonalBaseline {
   baselineConfidence: number;
 }
 
-export type MedicationStatus =
+export type MedicationDoseStatus =
   | "confirmed"
   | "not_confirmed"
   | "delayed"
   | "not_required";
+
+export type MedicationStatus = MedicationDoseStatus;
+
+export type MedicationConfirmSource =
+  | "elder_button"
+  | "caregiver"
+  | "demo"
+  | "system";
 
 export interface DailySnapshot {
   elderId: string;
@@ -71,13 +79,64 @@ export interface DailySnapshot {
   lastSyncedAt: string;
 }
 
+export interface MedicationDose {
+  doseId: string;
+  elderId: string;
+  label: string;
+  scheduledTime: string;
+  medicationName: string;
+  dosageText: string;
+  instruction: string;
+  status: MedicationDoseStatus;
+  confirmedAt?: string;
+  confirmedBy?: string;
+  confirmSource?: MedicationConfirmSource;
+  reminderEventId?: string;
+  confirmedEventId?: string;
+}
+
 export interface MedicationPlan {
   elderId: string;
-  morningRequired: boolean;
-  eveningRequired: boolean;
-  morningTime: string;
-  eveningTime: string;
-  reminderNote: string;
+  planName: string;
+  planSource: "mock" | "caregiver_input" | "doctor_note";
+  updatedAt: string;
+  notes: string;
+  doses: MedicationDose[];
+  medicalDisclaimer: string;
+}
+
+export interface ContactPerson {
+  contactId: string;
+  name: string;
+  role: "caregiver" | "family" | "institution_manager" | "doctor";
+  relation?: string;
+  phoneMasked: string;
+  visibleTo: Array<"caregiver" | "family" | "institution">;
+}
+
+export interface ConsentStatus {
+  elderId: string;
+  familyCanViewDailyStatus: boolean;
+  familyCanViewMedicationStatus: boolean;
+  familyCanViewLocationZone: boolean;
+  familyCanViewVoiceSummary: boolean;
+  doctorSummaryRequiresApproval: boolean;
+  locationPrecision: "zone_only" | "precise";
+  voiceRawTextPolicy: "summary_only" | "caregiver_only" | "visible_to_family";
+  updatedAt: string;
+}
+
+export interface ElderProfileDetail {
+  elderId: string;
+  languagePreference: string;
+  institutionName: string;
+  careGroup: string;
+  admissionType: string;
+  primaryCaregiverId: string;
+  backupCaregiverId?: string;
+  primaryFamilyContactId: string;
+  emergencyContactId?: string;
+  consentStatus: ConsentStatus;
 }
 
 export interface CareEvent {

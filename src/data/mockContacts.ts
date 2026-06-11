@@ -1,0 +1,73 @@
+import type { ContactPerson } from "../types";
+
+export const mockContacts: ContactPerson[] = [
+  {
+    contactId: "CG-A",
+    name: "护工A",
+    role: "caregiver",
+    phoneMasked: "6***1234",
+    visibleTo: ["caregiver", "family", "institution"],
+  },
+  {
+    contactId: "CG-B",
+    name: "护工B",
+    role: "caregiver",
+    phoneMasked: "6***5678",
+    visibleTo: ["caregiver", "institution"],
+  },
+  {
+    contactId: "FAM-E001",
+    name: "陈先生",
+    role: "family",
+    relation: "儿子",
+    phoneMasked: "6***2031",
+    visibleTo: ["caregiver", "family", "institution"],
+  },
+  {
+    contactId: "EMG-E001",
+    name: "陈女士",
+    role: "family",
+    relation: "女儿",
+    phoneMasked: "6***2032",
+    visibleTo: ["caregiver", "institution"],
+  },
+  {
+    contactId: "FAM-E002",
+    name: "李先生",
+    role: "family",
+    relation: "儿子",
+    phoneMasked: "6***2051",
+    visibleTo: ["caregiver", "family", "institution"],
+  },
+  {
+    contactId: "FAM-E003",
+    name: "黄女士",
+    role: "family",
+    relation: "女儿",
+    phoneMasked: "6***2011",
+    visibleTo: ["caregiver", "family", "institution"],
+  },
+  {
+    contactId: "FAM-E004",
+    name: "梁先生",
+    role: "family",
+    relation: "儿子",
+    phoneMasked: "6***2061",
+    visibleTo: ["caregiver", "family", "institution"],
+  },
+  {
+    contactId: "FAM-E005",
+    name: "吴女士",
+    role: "family",
+    relation: "女儿",
+    phoneMasked: "6***2081",
+    visibleTo: ["caregiver", "family", "institution"],
+  },
+  {
+    contactId: "MGR-01",
+    name: "机构管理员",
+    role: "institution_manager",
+    phoneMasked: "6***0001",
+    visibleTo: ["institution"],
+  },
+];

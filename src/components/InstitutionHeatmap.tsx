@@ -113,9 +113,17 @@ export const InstitutionHeatmap = ({ rows }: InstitutionHeatmapProps) => (
               <span>{recentCareRecord || "暂无处理记录"}</span>
             </td>
             <td>
-              <a className="text-button" href={`#/elder/${profile.elderId}`}>
-                查看详情
-              </a>
+              <div className="table-actions">
+                <a className="text-button" href={`#/elder/${profile.elderId}`}>
+                  查看详情
+                </a>
+                <a className="text-button" href={`#/elder/${profile.elderId}/profile`}>
+                  档案
+                </a>
+                <a className="text-button" href={`#/medication/${profile.elderId}`}>
+                  用药
+                </a>
+              </div>
             </td>
           </tr>
         ))}

@@ -61,6 +61,14 @@ export const CareTaskCard = ({
         </div>
       </dl>
       {task.note ? <p className="care-note">{task.note}</p> : null}
+      <div className="card-actions">
+        <a className="text-button" href={`#/elder/${profile.elderId}/profile`}>
+          查看档案
+        </a>
+        <a className="text-button" href={`#/medication/${profile.elderId}`}>
+          查看用药计划
+        </a>
+      </div>
       <div className="button-row">
         <button
           disabled={!canAccept}

@@ -15,7 +15,7 @@ export const AppShell = ({ children, currentPath }: AppShellProps) => (
       </a>
       <Navigation currentPath={currentPath} />
       <div className="sidebar-note">
-        <strong>Demo v0.1</strong>
+        <strong>Demo v0.1.3</strong>
         <p>模拟数据驱动的长者状态感知与 AI 照护闭环。</p>
       </div>
     </aside>

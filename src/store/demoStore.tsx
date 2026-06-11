@@ -8,12 +8,15 @@ import {
   type ReactNode,
 } from "react";
 import { mockBaselines } from "../data/mockBaselines";
+import { mockContacts } from "../data/mockContacts";
 import {
   mockEvents,
   mockOperationalStates,
   mockTasks,
 } from "../data/mockEvents";
-import { mockMedicationPlans, mockProfiles } from "../data/mockProfiles";
+import { mockMedicationPlans } from "../data/mockMedicationPlans";
+import { mockProfileDetails } from "../data/mockProfileDetails";
+import { mockProfiles } from "../data/mockProfiles";
 import { mockSnapshots } from "../data/mockSnapshots";
 import { mockTrends } from "../data/mockTrends";
 import { generateAgentSummaries } from "../lib/agentFormatter";
@@ -28,8 +31,10 @@ import type {
   AgentRoleSummaries,
   CareEvent,
   CareTask,
+  ContactPerson,
   DailySnapshot,
   ElderProfile,
+  ElderProfileDetail,
   ElderTrend,
   MedicationPlan,
   OperationalState,
@@ -37,7 +42,7 @@ import type {
   RiskResult,
 } from "../types";
 
-const storageKey = "careband-agent-demo-state-v0.1.1";
+const storageKey = "careband-agent-demo-state-v0.1.3";
 const chenId = "E001";
 
 export interface DemoState {
@@ -45,6 +50,8 @@ export interface DemoState {
   baselines: Record<string, PersonalBaseline>;
   snapshots: Record<string, DailySnapshot>;
   medicationPlans: Record<string, MedicationPlan>;
+  contacts: Record<string, ContactPerson>;
+  profileDetails: Record<string, ElderProfileDetail>;
   trends: Record<string, ElderTrend>;
   events: CareEvent[];
   tasks: CareTask[];
@@ -74,6 +81,12 @@ const toRecord = <T extends { elderId: string }>(items: T[]) =>
     return record;
   }, {});
 
+const toContactRecord = (items: ContactPerson[]) =>
+  items.reduce<Record<string, ContactPerson>>((record, item) => {
+    record[item.contactId] = item;
+    return record;
+  }, {});
+
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 export const createInitialDemoState = (): DemoState => ({
@@ -81,6 +94,8 @@ export const createInitialDemoState = (): DemoState => ({
   baselines: toRecord(clone(mockBaselines)),
   snapshots: toRecord(clone(mockSnapshots)),
   medicationPlans: toRecord(clone(mockMedicationPlans)),
+  contacts: toContactRecord(clone(mockContacts)),
+  profileDetails: toRecord(clone(mockProfileDetails)),
   trends: toRecord(clone(mockTrends)),
   events: clone(mockEvents),
   tasks: clone(mockTasks),
@@ -91,6 +106,34 @@ const addEventOnce = (events: CareEvent[], event: CareEvent) =>
   events.some((existing) => existing.eventId === event.eventId)
     ? events
     : [...events, event];
+
+const confirmEveningMedicationPlan = (
+  plans: Record<string, MedicationPlan>,
+  confirmedEventId = "EVT-E001-MED-PM-CONFIRMED",
+) => {
+  const plan = plans[chenId];
+  if (!plan) return plans;
+
+  return {
+    ...plans,
+    [chenId]: {
+      ...plan,
+      updatedAt: "2026-06-10T20:22:00+08:00",
+      doses: plan.doses.map((dose) =>
+        dose.label === "晚药"
+          ? {
+              ...dose,
+              status: "confirmed" as const,
+              confirmedAt: "20:22",
+              confirmedBy: "护工A",
+              confirmSource: "caregiver" as const,
+              confirmedEventId,
+            }
+          : dose,
+      ),
+    },
+  };
+};
 
 const nextTaskId = (tasks: CareTask[], baseId: string) => {
   if (!tasks.some((task) => task.taskId === baseId)) return baseId;
@@ -284,6 +327,7 @@ export const demoReducer = (state: DemoState, action: DemoAction): DemoState => 
             lastSyncedAt: "2026-06-10T20:22:00+08:00",
           },
         },
+        medicationPlans: confirmEveningMedicationPlan(state.medicationPlans),
         events: addEventOnce(state.events, medicationEvent),
         tasks: updateActiveTask(state.tasks, chenId, (task) => ({
           ...task,
@@ -339,6 +383,7 @@ export const demoReducer = (state: DemoState, action: DemoAction): DemoState => 
             lastSyncedAt: "2026-06-10T20:25:00+08:00",
           },
         },
+        medicationPlans: confirmEveningMedicationPlan(state.medicationPlans),
         events: addEventOnce(addEventOnce(state.events, medicationEvent), completedEvent),
         tasks: state.tasks.map((task) =>
           activeTask && task.taskId === activeTask.taskId
@@ -440,7 +485,22 @@ const loadInitialState = () => {
   const saved = window.localStorage.getItem(storageKey);
   if (!saved) return createInitialDemoState();
   try {
-    return JSON.parse(saved) as DemoState;
+    const parsed = JSON.parse(saved) as Partial<DemoState>;
+    const initial = createInitialDemoState();
+    return {
+      ...initial,
+      ...parsed,
+      profiles: parsed.profiles ?? initial.profiles,
+      baselines: parsed.baselines ?? initial.baselines,
+      snapshots: parsed.snapshots ?? initial.snapshots,
+      medicationPlans: parsed.medicationPlans ?? initial.medicationPlans,
+      contacts: parsed.contacts ?? initial.contacts,
+      profileDetails: parsed.profileDetails ?? initial.profileDetails,
+      trends: parsed.trends ?? initial.trends,
+      events: parsed.events ?? initial.events,
+      tasks: parsed.tasks ?? initial.tasks,
+      operationalStates: parsed.operationalStates ?? initial.operationalStates,
+    };
   } catch {
     return createInitialDemoState();
   }

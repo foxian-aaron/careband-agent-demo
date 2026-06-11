@@ -1,4 +1,4 @@
-import type { ElderProfile, MedicationPlan } from "../types";
+import type { ElderProfile } from "../types";
 
 export const mockProfiles: ElderProfile[] = [
   {
@@ -60,48 +60,5 @@ export const mockProfiles: ElderProfile[] = [
     riskTags: ["设备佩戴需提醒"],
     caregiverId: "CG-A",
     familyContactId: "FAM-E005",
-  },
-];
-
-export const mockMedicationPlans: MedicationPlan[] = [
-  {
-    elderId: "E001",
-    morningRequired: true,
-    eveningRequired: true,
-    morningTime: "08:00",
-    eveningTime: "20:00",
-    reminderNote: "早晚药均需确认，晚药未确认时提醒护工查看。",
-  },
-  {
-    elderId: "E002",
-    morningRequired: true,
-    eveningRequired: true,
-    morningTime: "07:40",
-    eveningTime: "19:30",
-    reminderNote: "用药确认正常，重点关注夜间离床与睡眠。",
-  },
-  {
-    elderId: "E003",
-    morningRequired: true,
-    eveningRequired: false,
-    morningTime: "08:10",
-    eveningTime: "-",
-    reminderNote: "今日无晚药计划。",
-  },
-  {
-    elderId: "E004",
-    morningRequired: false,
-    eveningRequired: false,
-    morningTime: "-",
-    eveningTime: "-",
-    reminderNote: "无固定用药计划。",
-  },
-  {
-    elderId: "E005",
-    morningRequired: true,
-    eveningRequired: true,
-    morningTime: "08:00",
-    eveningTime: "20:00",
-    reminderNote: "设备佩戴不足时先确认数据来源。",
   },
 ];
