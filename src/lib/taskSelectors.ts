@@ -29,10 +29,15 @@ export const getRecentCareRecord = (
     )
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
 
-  return (
+  const record =
     completedTask?.note ??
     completedEvent?.payload?.note ??
     completedEvent?.title ??
-    ""
-  );
+    "";
+
+  if (record.includes("护工A已查看") && record.includes("已确认晚药")) {
+    return "护工A已查看并确认晚药";
+  }
+
+  return record;
 };

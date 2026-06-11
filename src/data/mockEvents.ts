@@ -111,7 +111,7 @@ export const mockTasks: CareTask[] = [
     reason: "睡眠偏低 + 夜间离床次数增加",
     recommendedAction: "请护工晚间巡查时确认休息情况，必要时提醒减少夜间走动风险。",
     assignedTo: "护工A",
-    status: "pending",
+    status: "in_progress",
     createdAt: "2026-06-10T08:10:00+08:00",
     updatedAt: "2026-06-10T08:10:00+08:00",
   },
@@ -124,7 +124,7 @@ export const mockTasks: CareTask[] = [
     reason: "今日佩戴时间不足，数据完整度低于 40%",
     recommendedAction: "请先确认设备是否佩戴和同步，再判断是否需要进一步跟进。",
     assignedTo: "护工A",
-    status: "pending",
+    status: "in_progress",
     createdAt: "2026-06-10T13:25:00+08:00",
     updatedAt: "2026-06-10T13:25:00+08:00",
   },
@@ -132,8 +132,8 @@ export const mockTasks: CareTask[] = [
 
 export const mockOperationalStates: Record<string, OperationalState> = {
   E001: "normal",
-  E002: "pending",
+  E002: "in_progress",
   E003: "normal",
   E004: "normal",
-  E005: "pending",
+  E005: "in_progress",
 };

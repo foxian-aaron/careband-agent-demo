@@ -3,6 +3,16 @@ import {
   deriveInstitutionMetrics,
   type InstitutionElderRowInput,
 } from "../lib/institutionMetrics";
+import { deriveCareLoopStatus, deriveDisplayStatus } from "../lib/displayStatus";
+import {
+  createInitialDemoState,
+  demoReducer,
+  getActiveTaskForElder,
+  getEventsForElder,
+  getRiskForElder,
+  getTaskForElder,
+  type DemoState,
+} from "../store/demoStore";
 
 const row = (
   overrides: Partial<InstitutionElderRowInput>,
@@ -102,5 +112,68 @@ describe("deriveInstitutionMetrics", () => {
     ]);
 
     expect(metrics.averageDataCompleteness).toBe(66);
+  });
+});
+
+const metricsFromDemoState = (state: DemoState) =>
+  deriveInstitutionMetrics(
+    Object.values(state.profiles).map((profile) => {
+      const events = getEventsForElder(state, profile.elderId);
+      const risk = getRiskForElder(state, profile.elderId);
+      const careLoopStatus = deriveCareLoopStatus(profile.elderId, state.tasks, events);
+      const displayStatus = deriveDisplayStatus(risk, careLoopStatus);
+      const task =
+        getActiveTaskForElder(state, profile.elderId) ??
+        getTaskForElder(state, profile.elderId);
+
+      return {
+        elderId: profile.elderId,
+        riskLevel: risk.riskLevel,
+        riskScore: risk.riskScore,
+        displayStatusLabel: displayStatus.label,
+        displayStatusTone: displayStatus.tone,
+        careLoopStatus,
+        taskStatus: task?.status,
+        dataCompleteness: risk.dataCompleteness,
+      };
+    }),
+  );
+
+describe("institution metrics across Chen demo flow", () => {
+  it("matches the expected institution counters through the full care loop", () => {
+    let state = createInitialDemoState();
+    let metrics = metricsFromDemoState(state);
+    expect(metrics.currentOpenHighRiskCount).toBe(0);
+    expect(metrics.todayEverHighRiskCount).toBe(0);
+    expect(metrics.followedUpHighRiskCount).toBe(0);
+
+    state = demoReducer(state, { type: "TRIGGER_CHEN_DIZZINESS" });
+    metrics = metricsFromDemoState(state);
+    expect(metrics.currentOpenHighRiskCount).toBe(1);
+    expect(metrics.todayEverHighRiskCount).toBe(1);
+    expect(metrics.followedUpHighRiskCount).toBe(0);
+    expect(metrics.pendingTaskCount).toBe(1);
+
+    state = demoReducer(state, { type: "CAREGIVER_ACCEPT_TASK" });
+    metrics = metricsFromDemoState(state);
+    expect(metrics.currentOpenHighRiskCount).toBe(1);
+    expect(metrics.pendingTaskCount).toBe(0);
+
+    state = demoReducer(state, { type: "CAREGIVER_MARK_VIEWED" });
+    metrics = metricsFromDemoState(state);
+    expect(metrics.currentOpenHighRiskCount).toBe(1);
+    expect(metrics.followedUpHighRiskCount).toBe(0);
+
+    state = demoReducer(state, { type: "CONFIRM_EVENING_MEDICATION" });
+    metrics = metricsFromDemoState(state);
+    expect(metrics.currentOpenHighRiskCount).toBe(1);
+    expect(metrics.followedUpHighRiskCount).toBe(0);
+
+    state = demoReducer(state, { type: "COMPLETE_CARE_TASK" });
+    metrics = metricsFromDemoState(state);
+    expect(metrics.currentOpenHighRiskCount).toBe(0);
+    expect(metrics.todayEverHighRiskCount).toBe(1);
+    expect(metrics.followedUpHighRiskCount).toBe(1);
+    expect(metrics.pendingTaskCount).toBe(0);
   });
 });
