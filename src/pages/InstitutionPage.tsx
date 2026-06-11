@@ -3,6 +3,10 @@ import { InstitutionHeatmap, type HeatmapRow } from "../components/InstitutionHe
 import { MedicalDisclaimer } from "../components/MedicalDisclaimer";
 import { RiskBadge } from "../components/RiskBadge";
 import {
+  deriveInstitutionMetrics,
+  type InstitutionElderRowInput,
+} from "../lib/institutionMetrics";
+import {
   getActiveTaskForElder,
   getEventsForElder,
   getRiskForElder,
@@ -80,15 +84,19 @@ export const InstitutionPage = () => {
     (row) =>
       (filter === "all" || row.risk.riskLevel === filter) && matchesTreatment(row),
   );
-  const highRiskCount = rows.filter((row) =>
-    ["high_risk", "urgent"].includes(row.risk.riskLevel),
-  ).length;
+  const metricsInput: InstitutionElderRowInput[] = rows.map((row) => ({
+    elderId: row.profile.elderId,
+    riskLevel: row.risk.riskLevel,
+    riskScore: row.risk.riskScore,
+    displayStatusLabel: row.displayStatus.label,
+    displayStatusTone: row.displayStatus.tone,
+    careLoopStatus: row.careLoopStatus,
+    taskStatus: row.task?.status,
+    dataCompleteness: row.risk.dataCompleteness,
+  }));
+  const metrics = deriveInstitutionMetrics(metricsInput);
   const attentionCount = rows.filter((row) => row.risk.riskLevel === "attention").length;
   const stableCount = rows.filter((row) => row.risk.riskLevel === "stable").length;
-  const pendingTaskCount = state.tasks.filter((task) => task.status !== "completed").length;
-  const avgCompleteness = Math.round(
-    (rows.reduce((sum, row) => sum + row.risk.dataCompleteness, 0) / rows.length) * 100,
-  );
   const medicationUnconfirmed = Object.values(state.snapshots).filter(
     (snapshot) => snapshot.medicationEvening === "not_confirmed",
   ).length;
@@ -99,7 +107,7 @@ export const InstitutionPage = () => {
   const dataInsufficient = rows.filter(
     (row) => row.risk.riskLevel === "data_insufficient",
   ).length;
-  const institutionSummary = `今天共有 ${highRiskCount} 位长者处于高风险或紧急状态，${attentionCount} 位需要关注，${pendingTaskCount} 个任务仍需处理。建议机构优先安排护工查看高风险与晚药未确认长者，同时先确认数据不足长者的设备佩戴和同步情况。`;
+  const institutionSummary = `今天曾有 ${metrics.todayEverHighRiskCount} 位长者触发高风险或紧急状态，其中 ${metrics.currentOpenHighRiskCount} 位仍未闭环，${metrics.followedUpHighRiskCount} 位已完成跟进。当前还有 ${metrics.pendingTaskCount} 个任务尚未接单。建议机构优先确认未闭环高风险个案，同时复盘已跟进个案的处理记录。`;
 
   return (
     <div className="page">
@@ -115,11 +123,31 @@ export const InstitutionPage = () => {
       </header>
 
       <section className="stats-grid">
-        <article><span>高风险人数</span><strong>{highRiskCount}</strong></article>
-        <article><span>需关注人数</span><strong>{attentionCount}</strong></article>
-        <article><span>稳定人数</span><strong>{stableCount}</strong></article>
-        <article><span>待处理任务数</span><strong>{pendingTaskCount}</strong></article>
-        <article><span>平均数据完整度</span><strong>{avgCompleteness}%</strong></article>
+        <article>
+          <span>当前未闭环高风险</span>
+          <strong>{metrics.currentOpenHighRiskCount}</strong>
+          <p>仍需机构关注的高风险个案</p>
+        </article>
+        <article>
+          <span>今日曾高风险</span>
+          <strong>{metrics.todayEverHighRiskCount}</strong>
+          <p>今日曾触发高风险或紧急状态</p>
+        </article>
+        <article>
+          <span>已跟进高风险</span>
+          <strong>{metrics.followedUpHighRiskCount}</strong>
+          <p>今日高风险中已完成护工跟进</p>
+        </article>
+        <article>
+          <span>待处理任务</span>
+          <strong>{metrics.pendingTaskCount}</strong>
+          <p>尚未接单的任务</p>
+        </article>
+        <article>
+          <span>平均数据完整度</span>
+          <strong>{metrics.averageDataCompleteness}%</strong>
+          <p>今日状态数据可信度</p>
+        </article>
       </section>
 
       <section className="panel">
@@ -161,7 +189,10 @@ export const InstitutionPage = () => {
             <h2>今日关注点</h2>
           </div>
           <div className="summary-grid">
-            <div><span>今日高风险事件数</span><strong>{highRiskCount}</strong></div>
+            <div><span>今日曾高风险</span><strong>{metrics.todayEverHighRiskCount}</strong></div>
+            <div><span>当前未闭环高风险</span><strong>{metrics.currentOpenHighRiskCount}</strong></div>
+            <div><span>需关注人数</span><strong>{attentionCount}</strong></div>
+            <div><span>稳定人数</span><strong>{stableCount}</strong></div>
             <div><span>用药未确认人数</span><strong>{medicationUnconfirmed}</strong></div>
             <div><span>活动明显下降人数</span><strong>{activityDrop}</strong></div>
             <div><span>睡眠偏低人数</span><strong>{sleepLow}</strong></div>

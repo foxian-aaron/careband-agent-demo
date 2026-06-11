@@ -214,6 +214,13 @@ button.primary,
   margin-top: 8px;
 }
 
+.stats-grid p {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  margin: 8px 0 0;
+}
+
 .panel,
 .current-state-card,
 .family-peace-card,
