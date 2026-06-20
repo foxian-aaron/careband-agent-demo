@@ -4,6 +4,23 @@
 
 长者档案 + 今日状态 + 个人基线 + 照护事件 → 规则引擎判断风险 → Mock AI Agent 生成三端摘要 → 护工处理任务 → 家属端和机构端同步更新。
 
+## Current Public Demo Status
+
+Original demo remains deployed at the GitHub Pages root:
+
+- https://foxian-aaron.github.io/careband-agent-demo/#/institution
+- https://foxian-aaron.github.io/careband-agent-demo/#/elder/E001/profile
+- https://foxian-aaron.github.io/careband-agent-demo/#/medication/E001
+
+CareBand Agent v0.2 is deployed as a separate static preview under `/v0.2/`:
+
+- https://foxian-aaron.github.io/careband-agent-demo/v0.2/#/institution
+- https://foxian-aaron.github.io/careband-agent-demo/v0.2/#/elder/TEST001
+- https://foxian-aaron.github.io/careband-agent-demo/v0.2/#/elder/E001/profile
+- https://foxian-aaron.github.io/careband-agent-demo/v0.2/#/medication/E001
+
+GitHub Pages is static only. The v0.2 public preview uses mock fallback data; the full Express + SQLite + Agent backend must run locally or on a Node-compatible host.
+
 ## 技术栈
 
 - React + TypeScript + Vite

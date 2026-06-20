@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
       - name: Install dependencies
         run: npm ci
@@ -50,8 +50,16 @@ jobs:
       - name: Build v0.2 frontend
         working-directory: .pages-v02-source
         run: npm run build
+      - name: Install v0.2 backend dependencies
+        working-directory: .pages-v02-source/backend
+        run: npm ci
+      - name: Test v0.2 backend
+        working-directory: .pages-v02-source/backend
+        run: npm test
       - name: Add v0.2 demo under /v0.2
         run: |
+          # GitHub Pages deploys static frontend assets only.
+          # The Express + SQLite backend is tested in CI but must be hosted separately.
           mkdir -p pages-artifact/v0.2
           cp -R .pages-v02-source/dist/. pages-artifact/v0.2/
       - name: Setup Pages
