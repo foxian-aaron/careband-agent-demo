@@ -52,6 +52,9 @@
 - 前端 QA 已確認：
   - 後端已連接
   - 機構端顯示 TEST001 與 Apple Health Export
+  - GitHub Pages `/v0.2/` 標示為靜態預覽，使用 mock fallback，不宣稱後端在線
+  - `/v0.2/#/elder/TEST001` 在靜態 fallback 下顯示 TEST001，不會誤顯示陳伯
+  - `/v0.2/#/elder/UNKNOWN` 顯示「資料未載入：找不到此長者資料。」
   - TEST001 詳情頁顯示 snapshot date、data_quality、平均心率、靜息心率、步數、活動分鐘、睡眠、7日基線
   - Agent source 顯示 Mock fallback
   - 顯示免責聲明：本結果僅為照護風險提示，不構成醫療診斷。
@@ -74,9 +77,10 @@
 ## 測試與建置
 
 - Backend tests：13 passed
-- Frontend Vitest：34 passed
+- Frontend Vitest：38 passed
 - TypeScript build：passed
 - Vite build：passed
+- Public Pages smoke check：passed
 
 ## 結論
 

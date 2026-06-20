@@ -21,10 +21,15 @@ interface ElderSummaryCardProps {
 
 const identityBadges = (elderId: string) => {
   if (elderId === "TEST001") {
-    return ["團隊 Apple Watch 測試資料", "非真實長者", "用於驗證穿戴資料導入"];
+    return [
+      "團隊 Apple Watch 測試資料",
+      "非真實長者",
+      "驗證真實穿戴資料導入",
+      "不作為真實老人健康結論",
+    ];
   }
   if (elderId === "E001") {
-    return ["陳伯 Demo 情境", "模擬長者照護流程", "活動下降 + 頭暈 + SOS"];
+    return ["陳伯 Demo 情境", "模擬長者照護流程", "活動下降 + 頭暈 + SOS + 護工跟進"];
   }
   return ["Seeded demo elder"];
 };

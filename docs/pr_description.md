@@ -1,101 +1,137 @@
 # Summary
 
-This PR upgrades the frontend-only CareBand demo into CareBand Agent v0.2, a
-landing-validation demo for the full care loop:
+This PR upgrades the CareBand Agent demo into v0.2 landing validation:
 
-wearable data -> DailySnapshot -> personal baseline -> riskEngine -> AI Agent
-summary -> caregiver task -> family/institution visibility.
+```text
+wearable data -> DailySnapshot -> personal baseline -> riskEngine -> AI Agent summaries -> caregiver task -> family / institution visibility
+```
+
+It keeps the original demo available at the GitHub Pages root and deploys v0.2 as a separate static preview under `/v0.2/`.
+
+# Public Demo Links
+
+Original demo:
+
+- https://foxian-aaron.github.io/careband-agent-demo/#/institution
+- https://foxian-aaron.github.io/careband-agent-demo/#/elder/E001/profile
+- https://foxian-aaron.github.io/careband-agent-demo/#/medication/E001
+
+v0.2 static preview:
+
+- https://foxian-aaron.github.io/careband-agent-demo/v0.2/#/institution
+- https://foxian-aaron.github.io/careband-agent-demo/v0.2/#/elder/TEST001
+- https://foxian-aaron.github.io/careband-agent-demo/v0.2/#/elder/E001/profile
+- https://foxian-aaron.github.io/careband-agent-demo/v0.2/#/medication/E001
+
+# Static Preview Caveat
+
+GitHub Pages is static only. The public `/v0.2/` preview uses mock fallback data and does not run Express, SQLite, OpenAI, or backend API routes. Full backend mode requires local startup or a Node-compatible host.
 
 # What Changed
 
-- Added a minimal Node.js + Express + SQLite backend.
+- Added minimal Node.js + Express + SQLite backend.
 - Added dashboard, snapshot, event, task, import, and Agent API endpoints.
 - Added Apple Health XML preview and derived CSV import workflow.
 - Added deterministic risk rules before AI summary generation.
-- Added mock/OpenAI Agent fallback with a required medical disclaimer.
-- Added TEST001 for team Apple Watch test data.
-- Kept the original frontend UI and mock/localStorage fallback.
-- Added production single-port serving from Express.
+- Added mock/OpenAI Agent fallback with required medical disclaimer.
+- Added TEST001 for team Apple Watch test data and clearly labelled it as non-real elder data.
+- Kept E001 / 陳伯 as the main scripted care-loop demo.
+- Stopped unknown elder routes from falling back to E001.
+- Added a visible GitHub Pages static preview banner.
+- Added CI coverage for v0.2 backend tests.
 
-# How To Run
+# How To Run Original Demo
+
+From the root `careband-agent-demo` checkout:
 
 ```bash
 npm install
-cd backend
-npm install
-cd ..
+npm test
+npm run build
 npm run dev
 ```
 
-Frontend:
+# How To Run v0.2 Frontend
 
-```text
-http://localhost:5173/
+From `careband-agent-demo-v0.2` or the `careband-v0.2-apple-health` branch:
+
+```bash
+npm install
+npm test
+npm run build
+npm run dev:frontend
 ```
 
-Backend:
+# How To Run v0.2 Backend
+
+```bash
+cd backend
+npm install
+npm test
+npm start
+```
+
+Backend health:
 
 ```text
 http://localhost:3001/api/health
 ```
 
-Single-port production smoke test:
-
-```bash
-npm run build
-cd backend
-npm start
-```
-
-Open:
-
-```text
-http://localhost:3001/#/elder/TEST001
-```
-
 # How To Test
 
+Original demo:
+
 ```bash
-cd backend
-npm test
-cd ..
 npm test
 npm run build
 ```
 
-# Demo Flow
+v0.2 frontend:
 
-Main scripted care-loop demo:
+```bash
+npm test
+npm run build
+```
 
-1. Open E001.
-2. Trigger voice symptom.
-3. Trigger SOS.
-4. Confirm a caregiver task was created.
-5. Generate/view Agent summaries.
-6. Accept, check, confirm medication, and complete the task.
+v0.2 backend:
 
-Apple Watch import demo:
+```bash
+cd backend
+npm test
+```
 
-1. Preview Apple Health XML locally.
-2. Derive daily aggregated CSV.
-3. Import 7-14 daily snapshots into TEST001.
-4. Open TEST001 and show Apple Health Export data source.
+Optional public smoke:
 
-# Privacy Notes
+```bash
+npm run check:public
+```
+
+# TEST001 / E001 Explanation
+
+- `TEST001` = team Apple Watch test data, non-real elder, used to validate Apple Health / Apple Watch daily snapshot import.
+- `E001` = 陳伯 Demo 情境, simulated elder care-loop scenario for activity decline, dizziness, SOS, caregiver task, Agent summaries, and family/institution visibility.
+
+# Apple Health Privacy Notes
 
 - Raw Apple Health XML/ZIP files are not committed.
 - SQLite DB files are ignored.
 - `.env` files are ignored.
 - Raw Apple Health XML must not be sent to OpenAI, QwenPaw, or other LLMs.
-- Agent analysis uses only daily aggregated snapshots.
-- TEST001 is team member Apple Watch test data, not real elder data.
-- The system is a care-risk prompt demo, not a medical diagnosis system.
+- Agent analysis uses only daily aggregated snapshots, risk results, and event summaries.
+- Direct XML upload is only for development or small files; recommended workflow is local preview/derive -> daily CSV import.
+
+# Medical Boundary
+
+All Agent outputs must include:
+
+```text
+本結果僅為照護風險提示，不構成醫療診斷。
+```
 
 # Remaining Risks
 
-- Apple Health XML exports can be very large; the recommended workflow is local
-  preview/derive -> daily CSV import.
-- SQLite is suitable for the demo, not a commercial multi-user backend.
-- Public deployment needs a stable Node host; temporary tunnels should not be
-  used for final review.
+- GitHub Pages cannot demonstrate the real backend; use local or Node hosting for full end-to-end review.
+- Apple Health XML exports can be very large; use local preview/derive CSV.
+- SQLite is suitable for demo validation, not commercial multi-user deployment without further architecture work.
+- QwenPaw-style Agent interface is prepared through `/api/agent/analyze`; QwenPaw is not claimed as fully integrated.
 

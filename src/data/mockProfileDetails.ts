@@ -11,6 +11,17 @@ const consentById = mockConsentStatuses.reduce<Record<string, ConsentStatus>>(
 
 export const mockProfileDetails: ElderProfileDetail[] = [
   {
+    elderId: "TEST001",
+    languagePreference: "團隊測試資料",
+    institutionName: "CareBand v0.2 Demo",
+    careGroup: "Apple Health 資料驗證",
+    admissionType: "非真實長者 / 團隊 Apple Watch 測試資料",
+    primaryCaregiverId: "CG-A",
+    backupCaregiverId: "CG-B",
+    primaryFamilyContactId: "FAM-TEST001",
+    consentStatus: consentById.TEST001,
+  },
+  {
     elderId: "E001",
     languagePreference: "粤语 / 普通话",
     institutionName: "澳门长者中心 Demo",

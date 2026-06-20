@@ -58,7 +58,7 @@ import type {
   RiskResult,
 } from "../types";
 
-const storageKey = "careband-agent-demo-state-v0.1.3";
+const storageKey = "careband-agent-demo-state-v0.2";
 const chenId = "E001";
 const testAppleWatchId = "TEST001";
 const backendFallbackMessage = "後端未連接，正在使用本地 mock fallback";
@@ -865,18 +865,18 @@ const loadInitialState = () => {
     return {
       ...initial,
       ...parsed,
-      profiles: parsed.profiles ?? initial.profiles,
-      baselines: parsed.baselines ?? initial.baselines,
-      snapshots: parsed.snapshots ?? initial.snapshots,
-      medicationPlans: parsed.medicationPlans ?? initial.medicationPlans,
-      contacts: parsed.contacts ?? initial.contacts,
-      profileDetails: parsed.profileDetails ?? initial.profileDetails,
-      trends: parsed.trends ?? initial.trends,
+      profiles: { ...initial.profiles, ...parsed.profiles },
+      baselines: { ...initial.baselines, ...parsed.baselines },
+      snapshots: { ...initial.snapshots, ...parsed.snapshots },
+      medicationPlans: { ...initial.medicationPlans, ...parsed.medicationPlans },
+      contacts: { ...initial.contacts, ...parsed.contacts },
+      profileDetails: { ...initial.profileDetails, ...parsed.profileDetails },
+      trends: { ...initial.trends, ...parsed.trends },
       events: parsed.events ?? initial.events,
       tasks: parsed.tasks ?? initial.tasks,
-      operationalStates: parsed.operationalStates ?? initial.operationalStates,
-      backendRiskResults: parsed.backendRiskResults ?? initial.backendRiskResults,
-      agentOutputs: parsed.agentOutputs ?? initial.agentOutputs,
+      operationalStates: { ...initial.operationalStates, ...parsed.operationalStates },
+      backendRiskResults: { ...initial.backendRiskResults, ...parsed.backendRiskResults },
+      agentOutputs: { ...initial.agentOutputs, ...parsed.agentOutputs },
       backend: parsed.backend ?? initial.backend,
     };
   } catch {

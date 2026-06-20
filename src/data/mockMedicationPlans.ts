@@ -5,6 +5,36 @@ const disclaimer =
 
 export const mockMedicationPlans: MedicationPlan[] = [
   {
+    elderId: "TEST001",
+    planName: "TEST001 無固定用藥計畫（團隊測試資料）",
+    planSource: "mock",
+    updatedAt: "2026-06-20T06:31:33+08:00",
+    notes: "此頁僅防止 TEST001 誤顯示陳伯用藥資料；TEST001 不是長者照護案例，沒有真實用藥結論。",
+    medicalDisclaimer: disclaimer,
+    doses: [
+      {
+        doseId: "MED-TEST001-MORNING",
+        elderId: "TEST001",
+        label: "早药",
+        scheduledTime: "08:00",
+        medicationName: "無固定用藥",
+        dosageText: "無",
+        instruction: "團隊測試資料，無真實用藥安排",
+        status: "not_required",
+      },
+      {
+        doseId: "MED-TEST001-EVENING",
+        elderId: "TEST001",
+        label: "晚药",
+        scheduledTime: "20:00",
+        medicationName: "無固定用藥",
+        dosageText: "無",
+        instruction: "團隊測試資料，無真實用藥安排",
+        status: "not_required",
+      },
+    ],
+  },
+  {
     elderId: "E001",
     planName: "陈伯今日用药计划（模拟）",
     planSource: "mock",

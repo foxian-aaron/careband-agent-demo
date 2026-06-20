@@ -4,10 +4,12 @@
 
 Purpose:
 
+- Display name: `團隊 Apple Watch 測試資料`.
 - Team member Apple Watch / Apple Health test data.
 - Used to demonstrate real wearable data import into DailySnapshot rows.
 - Not real elderly user data.
 - Not a medical record.
+- Not a real elder health conclusion.
 
 Use during presentation:
 
@@ -25,6 +27,7 @@ Do not say:
 
 Purpose:
 
+- Display name: `陳伯 Demo 情境`.
 - Main scripted elderly care-loop demo.
 - Shows activity decline, voice symptom, SOS, caregiver task, Agent summaries,
   and task completion.
@@ -45,3 +48,5 @@ Use during presentation:
 
 These personas are seeded mock demo elders for presentation variety.
 
+GitHub Pages `/v0.2/` is a static preview using mock fallback. Full backend
+import and Agent API calls require local or Node-hosted backend mode.

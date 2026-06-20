@@ -1,6 +1,8 @@
 import { FamilyPeaceCard } from "../components/FamilyPeaceCard";
 import { MedicalDisclaimer } from "../components/MedicalDisclaimer";
+import { UnknownElderState } from "../components/UnknownElderState";
 import { deriveCareLoopStatus, deriveDisplayStatus } from "../lib/displayStatus";
+import { getElderViewModel } from "../lib/elderView";
 import { buildFamilyStatusMessage } from "../lib/familyCopy";
 import {
   getActiveTaskForElder,
@@ -15,7 +17,9 @@ interface FamilyPageProps {
 
 export const FamilyPage = ({ elderId }: FamilyPageProps) => {
   const { state } = useDemo();
-  const profile = state.profiles[elderId] ?? state.profiles.E001;
+  const viewModel = getElderViewModel(state, elderId);
+  if (!viewModel.found) return <UnknownElderState elderId={elderId} />;
+  const { profile } = viewModel;
   const snapshot = state.snapshots[profile.elderId];
   const risk = getRiskForElder(state, profile.elderId);
   const task = getActiveTaskForElder(state, profile.elderId);

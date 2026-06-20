@@ -9,9 +9,11 @@
 ## Method
 
 - Preview method:
+- Derived CSV method:
 - Import method:
 - Step source strategy:
 - Sleep grouping strategy:
+- Direct browser XML upload used: no / development-only / small-file-only
 
 ## Date Range
 
@@ -41,11 +43,15 @@
 ## Dashboard Verification
 
 - TEST001 visible:
+- Public static preview banner visible:
+- GitHub Pages does not claim backend is online:
 - `data_source = Apple Health Export`:
 - `data_quality` visible:
+- latest snapshot date visible:
 - baseline label visible:
 - Agent source visible:
 - medical disclaimer visible:
+- Unknown elder route does not fallback to E001:
 
 ## Demo Flow Verification
 
@@ -61,4 +67,5 @@
 - No Apple ID included.
 - No raw time-series included.
 - TEST001 labelled as team Apple Watch test data, not real elder data.
-
+- Raw files remain under ignored `private_data/`.
+- GitHub Pages static preview uses safe mock sample data only.

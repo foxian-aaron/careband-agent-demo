@@ -2,6 +2,17 @@ import type { ConsentStatus } from "../types";
 
 export const mockConsentStatuses: ConsentStatus[] = [
   {
+    elderId: "TEST001",
+    familyCanViewDailyStatus: true,
+    familyCanViewMedicationStatus: false,
+    familyCanViewLocationZone: false,
+    familyCanViewVoiceSummary: false,
+    doctorSummaryRequiresApproval: true,
+    locationPrecision: "zone_only",
+    voiceRawTextPolicy: "summary_only",
+    updatedAt: "2026-06-20T06:31:33+08:00",
+  },
+  {
     elderId: "E001",
     familyCanViewDailyStatus: true,
     familyCanViewMedicationStatus: true,

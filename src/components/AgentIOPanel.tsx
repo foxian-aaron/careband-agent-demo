@@ -35,6 +35,7 @@ export const AgentIOPanel = ({
       </div>
       <p className="muted-copy">
         当前 Agent 来源：{summaries.agentSource === "openai" ? "OpenAI" : "Mock fallback"}。
+        Agent provider: mock fallback / OpenAI / future QwenPaw-compatible endpoint。
         API key 只在后端读取，前端不会暴露密钥。
       </p>
       {summaries.warning ? <p className="muted-copy">Agent 警告：{summaries.warning}</p> : null}

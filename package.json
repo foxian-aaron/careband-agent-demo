@@ -11,7 +11,8 @@
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
     "test:backend": "cd backend && node --test tests/*.test.js",
-    "seed:reset": "cd backend && node scripts/resetDemoData.js"
+    "seed:reset": "cd backend && node scripts/resetDemoData.js",
+    "check:public": "node scripts/check-public-demo.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

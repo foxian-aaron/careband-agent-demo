@@ -152,6 +152,28 @@ button.primary,
   padding: 28px;
 }
 
+.public-preview-banner {
+  background: rgba(47, 128, 160, 0.08);
+  border: 1px solid rgba(47, 128, 160, 0.22);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  display: grid;
+  gap: 6px;
+  line-height: 1.55;
+  margin: 0 auto 20px;
+  max-width: 1360px;
+  padding: 12px 14px;
+}
+
+.public-preview-banner strong {
+  color: var(--text-primary);
+}
+
+.public-preview-banner--static {
+  background: rgba(197, 138, 24, 0.12);
+  border-color: rgba(197, 138, 24, 0.26);
+}
+
 .page {
   display: grid;
   gap: 22px;
@@ -1149,6 +1171,14 @@ button.primary,
 
 .empty-state p {
   margin: 8px 0 0;
+}
+
+.empty-state .button-row {
+  margin-top: 14px;
+}
+
+.empty-state--page {
+  background: rgba(255, 255, 255, 0.94);
 }
 
 @media (max-width: 1080px) {

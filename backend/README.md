@@ -72,12 +72,18 @@ SQLite 文件位于 `backend/data/careband.sqlite`，已被 ignore。
 真实数据推荐路径：
 
 ```bash
-npm run preview:apple-health -- ../private_data/apple_health/apple_health_export/export.xml --limit-days=14
-npm run derive:apple-health -- ../private_data/apple_health/apple_health_export/export.xml --limit-days=14
+npm run preview:apple-health -- ../private_data/apple_health/export.xml
+npm run derive:apple-health -- ../private_data/apple_health/export.xml
 ```
 
 然后导入 `private_data/derived/apple_watch_daily_snapshots.csv`。
 
-Direct XML upload 会写入 `backend/uploads/` 临时文件并在完成后删除；如果 XML 过大，会返回清楚错误，要求改用本地 preview/derive -> CSV 流程。
+Direct XML upload 只适合开发或小文件，会写入 `backend/uploads/` 临时文件并在完成后删除；如果 XML 过大，会返回清楚错误，要求改用本地 preview/derive -> CSV 流程。
+
+GitHub Pages 无法运行本后端，也无法导入 XML/CSV。公网页面的 `/v0.2/` 版本只是静态预览，使用 safe mock fallback。
 
 默认步数策略是 `prefer_watch`：同一天同时存在 Apple Watch 和 iPhone 步数时，优先使用 Apple Watch，避免默认双重计步。
+
+## Agent Boundary
+
+目前 provider 是 mock fallback / OpenAI。未来可在 `/api/agent/analyze` 后端实现替换为 QwenPaw-compatible endpoint，但 v0.2 不宣称 QwenPaw 已完整集成。

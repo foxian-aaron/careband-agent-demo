@@ -129,34 +129,34 @@ export const DemoControlPanel = ({ state, dispatch }: DemoControlPanelProps) => 
           title={canAccept ? "接单后任务进入处理中" : "需要先触发任务，或当前任务已接单"}
           onClick={() => dispatch({ type: "CAREGIVER_ACCEPT_TASK" })}
         >
-          护工接单
+          陳伯 E001 護工接單
         </button>
         <button
           disabled={!canMarkViewed}
           title={canMarkViewed ? "记录护工到场查看" : "护工接单后才能标记已查看"}
           onClick={() => dispatch({ type: "CAREGIVER_MARK_VIEWED" })}
         >
-          标记已查看
+          陳伯 E001 標記已查看
         </button>
         <button
           disabled={!canConfirmMedication}
           title={canConfirmMedication ? "确认晚药状态" : "标记已查看后才能确认晚药"}
           onClick={() => dispatch({ type: "CONFIRM_EVENING_MEDICATION" })}
         >
-          确认晚药
+          確認陳伯 E001 晚藥
         </button>
         <button
           disabled={!canComplete}
           title={canComplete ? "完成并写入护工备注" : "确认晚药后才能完成处理"}
           onClick={() => dispatch({ type: "COMPLETE_CARE_TASK" })}
         >
-          完成护工处理
+          完成陳伯 E001 護工任務
         </button>
         <button onClick={() => dispatch({ type: "TRIGGER_SOS" })}>
           触发陈伯 E001 SOS 测试
         </button>
         <button onClick={() => dispatch({ type: "SIMULATE_DATA_GAP" })}>
-          模拟数据不足
+          模拟陈伯 E001 数据不足
         </button>
         <button onClick={() => dispatch({ type: "IMPORT_APPLE_HEALTH_SAMPLE" })}>
           导入 TEST001 Apple Health 示例快照

@@ -4,6 +4,26 @@ export const demoDate = "2026-06-10";
 
 export const mockSnapshots: DailySnapshot[] = [
   {
+    elderId: "TEST001",
+    date: "2026-06-19",
+    snapshotId: "APPLE-TEST001-2026-06-19",
+    dataSource: "Apple Health Export",
+    dataQuality: 85,
+    heartRate: 69.1,
+    restingHeartRate: 66,
+    stepsToday: 1099,
+    activeMinutes: 0,
+    sleepDuration: 6.27,
+    medicationMorning: "not_required",
+    medicationEvening: "not_required",
+    wearTimeHours: 0,
+    locationZone: "團隊測試資料",
+    safeZoneStatus: "unknown",
+    fallDetected: false,
+    dataCompleteness: 0.85,
+    lastSyncedAt: "2026-06-20T06:31:33+08:00",
+  },
+  {
     elderId: "E001",
     date: demoDate,
     heartRate: 86,

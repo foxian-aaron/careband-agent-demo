@@ -7,8 +7,10 @@ import { RiskBadge } from "../components/RiskBadge";
 import { StatusPill } from "../components/StatusPill";
 import { Timeline } from "../components/Timeline";
 import { TrendMiniChart } from "../components/TrendMiniChart";
+import { UnknownElderState } from "../components/UnknownElderState";
 import { formatDateTime } from "../lib/dateUtils";
 import { deriveCareLoopStatus, deriveDisplayStatus, displayToneToPillTone } from "../lib/displayStatus";
+import { getElderViewModel } from "../lib/elderView";
 import {
   medicationLabels,
   operationalLabels,
@@ -47,7 +49,12 @@ const formatSigned = (value: number, digits = 0) => {
 const getIdentityNotice = (elderId: string) => {
   if (elderId === "TEST001") {
     return {
-      badges: ["團隊 Apple Watch 測試資料", "非真實長者", "用於驗證穿戴資料導入"],
+      badges: [
+        "團隊 Apple Watch 測試資料",
+        "非真實長者",
+        "驗證真實穿戴資料導入",
+        "不作為真實老人健康結論",
+      ],
       note: "此頁為團隊 Apple Watch 測試資料。完整照護閉環請查看陳伯 E001 Demo。",
     };
   }
@@ -65,13 +72,12 @@ const getIdentityNotice = (elderId: string) => {
 
 export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
   const { state } = useDemo();
-  const profile = state.profiles[elderId] ?? state.profiles.E001;
-  const baseline = state.baselines[profile.elderId];
-  const snapshot = state.snapshots[profile.elderId];
+  const viewModel = getElderViewModel(state, elderId);
+  if (!viewModel.found) return <UnknownElderState elderId={elderId} />;
+  const { profile, baseline, snapshot, trend } = viewModel;
   const risk = getRiskForElder(state, profile.elderId);
   const events = getEventsForElder(state, profile.elderId);
   const summaries = getAgentSummariesForElder(state, profile.elderId);
-  const trend = state.trends[profile.elderId];
   const operationalState = state.operationalStates[profile.elderId] ?? "normal";
   const careLoopStatus = deriveCareLoopStatus(profile.elderId, state.tasks, events);
   const displayStatus = deriveDisplayStatus(risk, careLoopStatus);
@@ -145,6 +151,11 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
             <a className="text-button" href={`#/medication/${profile.elderId}`}>
               查看用药计划
             </a>
+            {profile.elderId === "TEST001" ? (
+              <a className="text-button" href="#/elder/E001">
+                查看陳伯照護閉環 Demo
+              </a>
+            ) : null}
           </div>
         </div>
         <div className="hero-status-stack">

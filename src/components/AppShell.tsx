@@ -7,14 +7,36 @@ interface AppShellProps {
   currentPath: string;
 }
 
+type BackendMode = "local" | "connected" | "unavailable";
+
+export const getRuntimeStatusText = (
+  backendMode: BackendMode,
+  locationLike?: Pick<Location, "hostname" | "pathname">,
+) => {
+  const hostname = locationLike?.hostname ?? "";
+  const pathname = locationLike?.pathname ?? "";
+  const isGitHubPagesPreview =
+    hostname.endsWith("github.io") || pathname.includes("/careband-agent-demo/v0.2");
+  const backendText =
+    backendMode === "connected"
+      ? "後端已連接：Express + SQLite"
+      : "後端未連接：正在使用本地 mock fallback";
+
+  return {
+    isGitHubPagesPreview,
+    backendText,
+    previewText: isGitHubPagesPreview
+      ? "GitHub Pages 靜態預覽版：目前使用 mock fallback；完整 Express + SQLite + Agent 後端需本地或 Node hosting 啟動。"
+      : "本地 v0.2 Demo：可連接 Express + SQLite 後端，後端未啟動時使用 mock fallback。",
+  };
+};
+
 export const AppShell = ({ children, currentPath }: AppShellProps) => {
   const { state } = useDemo();
-  const backendText =
-    state.backend.mode === "connected"
-      ? "后端已连接"
-      : state.backend.mode === "unavailable"
-        ? "后端未连接，使用本地 Mock"
-        : "本地 Mock 模式";
+  const runtime = getRuntimeStatusText(
+    state.backend.mode,
+    typeof window === "undefined" ? undefined : window.location,
+  );
 
   return (
     <div className="app-shell">
@@ -27,10 +49,22 @@ export const AppShell = ({ children, currentPath }: AppShellProps) => {
         <div className="sidebar-note">
           <strong>Demo v0.2 落地验证版</strong>
           <p>最小后端 + SQLite + Apple Health 导入 + AI Agent fallback。</p>
-          <small>{backendText}</small>
+          <small>{runtime.backendText}</small>
         </div>
       </aside>
-      <main className="main-content">{children}</main>
+      <main className="main-content">
+        <div
+          className={
+            runtime.isGitHubPagesPreview
+              ? "public-preview-banner public-preview-banner--static"
+              : "public-preview-banner"
+          }
+        >
+          <strong>{runtime.previewText}</strong>
+          <span>{runtime.backendText}</span>
+        </div>
+        {children}
+      </main>
     </div>
   );
 };

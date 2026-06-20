@@ -8,20 +8,26 @@ Goal: demonstrate Apple Health / Apple Watch data import only.
 
 ```bash
 cd backend
-npm run preview:apple-health -- ../private_data/apple_health/apple_health_export/export.xml --limit-days=14
+npm run preview:apple-health -- ../private_data/apple_health/export.xml
 ```
 
 4. Derive daily aggregated CSV:
 
 ```bash
-npm run derive:apple-health -- ../private_data/apple_health/apple_health_export/export.xml --limit-days=14
+npm run derive:apple-health -- ../private_data/apple_health/export.xml
 ```
 
 5. Import the derived CSV with the backend CSV endpoint.
-6. Open:
+6. For public static preview, open:
 
 ```text
-/#/elder/TEST001
+https://foxian-aaron.github.io/careband-agent-demo/v0.2/#/elder/TEST001
+```
+
+For full local backend mode, open:
+
+```text
+http://localhost:3001/#/elder/TEST001
 ```
 
 7. Show:
@@ -36,3 +42,6 @@ npm run derive:apple-health -- ../private_data/apple_health/apple_health_export/
 
 Do not use TEST001 as the main elder care-loop story. Use E001 for the scripted
 caregiver task demo.
+
+GitHub Pages is static only. It can show safe mock Apple Health sample data but
+cannot run XML/CSV import endpoints.

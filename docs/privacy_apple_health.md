@@ -18,13 +18,19 @@ private local files.
 
 ## Recommended Safe Workflow
 
+Keep raw files under `private_data/apple_health/`. If you receive `export.zip`,
+unzip it locally and locate the XML before running the scripts.
+
 ```bash
 cd backend
-npm run preview:apple-health -- ../private_data/apple_health/apple_health_export/export.xml
-npm run derive:apple-health -- ../private_data/apple_health/apple_health_export/export.xml
+npm run preview:apple-health -- ../private_data/apple_health/export.xml
+npm run derive:apple-health -- ../private_data/apple_health/export.xml
 ```
 
 Then import only the derived daily CSV.
+
+Direct browser XML upload is for development or small files only. GitHub Pages
+cannot import XML because it has no backend.
 
 ## What Agent May Receive
 
@@ -43,4 +49,3 @@ Not allowed:
 - Apple ID
 - device owner identity
 - clinical records
-
