@@ -32,12 +32,34 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      - name: Prepare Pages artifact root
+        run: |
+          mkdir -p pages-artifact
+          cp -R dist/. pages-artifact/
+      - name: Checkout v0.2 demo branch
+        uses: actions/checkout@v4
+        with:
+          ref: careband-v0.2-apple-health
+          path: .pages-v02-source
+      - name: Install v0.2 frontend dependencies
+        working-directory: .pages-v02-source
+        run: npm ci
+      - name: Test v0.2 frontend
+        working-directory: .pages-v02-source
+        run: npm test
+      - name: Build v0.2 frontend
+        working-directory: .pages-v02-source
+        run: npm run build
+      - name: Add v0.2 demo under /v0.2
+        run: |
+          mkdir -p pages-artifact/v0.2
+          cp -R .pages-v02-source/dist/. pages-artifact/v0.2/
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: pages-artifact
 
   deploy:
     environment:
