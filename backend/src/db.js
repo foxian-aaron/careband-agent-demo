@@ -709,3 +709,24 @@ export function insertAgentOutput(output) {
     db.prepare("SELECT * FROM agent_outputs WHERE output_id = ?").get(record.output_id),
   );
 }
+
+export function resetDemoData() {
+  const db = getDb();
+  const reset = db.transaction(() => {
+    db.prepare("DELETE FROM agent_outputs").run();
+    db.prepare("DELETE FROM tasks").run();
+    db.prepare("DELETE FROM events").run();
+    db.prepare("DELETE FROM snapshots").run();
+    db.prepare("DELETE FROM elders").run();
+    seedDemoData(db);
+  });
+
+  reset();
+  return {
+    elders: db.prepare("SELECT COUNT(*) AS count FROM elders").get().count,
+    snapshots: db.prepare("SELECT COUNT(*) AS count FROM snapshots").get().count,
+    events: db.prepare("SELECT COUNT(*) AS count FROM events").get().count,
+    tasks: db.prepare("SELECT COUNT(*) AS count FROM tasks").get().count,
+    agent_outputs: db.prepare("SELECT COUNT(*) AS count FROM agent_outputs").get().count,
+  };
+}

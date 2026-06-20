@@ -87,6 +87,10 @@ export const DemoControlPanel = ({ state, dispatch }: DemoControlPanelProps) => 
 
   return (
     <section className="demo-control">
+      <div className="target-note">
+        <strong>目前照護流程操作對象：陳伯 E001</strong>
+        <span>Apple Health 示例快照會寫入 TEST001 團隊測試資料，不會改動陳伯照護故事。</span>
+      </div>
       <div className="control-status">
         <div>
           <span>当前 Demo 阶段</span>
@@ -111,14 +115,14 @@ export const DemoControlPanel = ({ state, dispatch }: DemoControlPanelProps) => 
         </div>
       </div>
       <div className="control-buttons">
-        <button onClick={() => dispatch({ type: "RESET_DEMO" })}>重置 Demo</button>
+        <button onClick={() => dispatch({ type: "RESET_DEMO" })}>重置本地 Demo</button>
         <button
           className="primary"
           disabled={!canTriggerDizziness}
           title={canTriggerDizziness ? "触发语音主诉并创建高优先级任务" : "本轮头晕事件已触发"}
           onClick={() => dispatch({ type: "TRIGGER_CHEN_DIZZINESS" })}
         >
-          触发陈伯头晕语音事件
+          触发陈伯 E001 头晕语音事件
         </button>
         <button
           disabled={!canAccept}
@@ -149,13 +153,13 @@ export const DemoControlPanel = ({ state, dispatch }: DemoControlPanelProps) => 
           完成护工处理
         </button>
         <button onClick={() => dispatch({ type: "TRIGGER_SOS" })}>
-          触发 SOS 测试
+          触发陈伯 E001 SOS 测试
         </button>
         <button onClick={() => dispatch({ type: "SIMULATE_DATA_GAP" })}>
           模拟数据不足
         </button>
         <button onClick={() => dispatch({ type: "IMPORT_APPLE_HEALTH_SAMPLE" })}>
-          导入 Apple Health 示例快照
+          导入 TEST001 Apple Health 示例快照
         </button>
       </div>
       <div className="panel">
@@ -165,7 +169,7 @@ export const DemoControlPanel = ({ state, dispatch }: DemoControlPanelProps) => 
         </div>
         <p className="muted-copy">
           当前后端状态：{state.backend.mode === "connected" ? "已连接" : "未连接，使用本地 Mock fallback"}。
-          示例导入会写入 data_source = Apple Health Export，并刷新数据质量。
+          陈伯 E001 用于完整照护闭环；TEST001 用于团队 Apple Watch 测试资料导入。示例导入会写入 TEST001 的 data_source = Apple Health Export。
         </p>
         {state.backend.error ? <p className="muted-copy">最近后端错误：{state.backend.error}</p> : null}
       </div>

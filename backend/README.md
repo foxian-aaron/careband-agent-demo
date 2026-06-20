@@ -21,7 +21,10 @@ DATABASE_PATH=./data/careband.sqlite
 USE_MOCK_AGENT=true
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-4o-mini
+AGENT_TIMEOUT_MS=30000
 CORS_ORIGIN=http://localhost:5173
+APPLE_HEALTH_STEP_SOURCE_STRATEGY=prefer_watch
+APPLE_HEALTH_XML_UPLOAD_MAX_MB=150
 ```
 
 无 `OPENAI_API_KEY` 或 `USE_MOCK_AGENT=true` 时自动使用 mock Agent。
@@ -44,6 +47,7 @@ SQLite 文件位于 `backend/data/careband.sqlite`，已被 ignore。
 - `POST /api/snapshots`
 - `POST /api/events`
 - `POST /api/import/daily-snapshots-csv`
+- `POST /api/import/apple-health-xml/preview`
 - `POST /api/import/apple-health-xml`
 - `POST /api/agent/analyze`
 - `PATCH /api/tasks/:id`
@@ -65,4 +69,15 @@ SQLite 文件位于 `backend/data/careband.sqlite`，已被 ignore。
 
 ## Apple Health
 
-CSV 是推荐 demo 路径；XML 解析适用于小到中等导出文件。真实商业化场景需要流式解析、用户授权和数据治理，本 demo 不实现这些能力。
+真实数据推荐路径：
+
+```bash
+npm run preview:apple-health -- ../private_data/apple_health/apple_health_export/export.xml --limit-days=14
+npm run derive:apple-health -- ../private_data/apple_health/apple_health_export/export.xml --limit-days=14
+```
+
+然后导入 `private_data/derived/apple_watch_daily_snapshots.csv`。
+
+Direct XML upload 会写入 `backend/uploads/` 临时文件并在完成后删除；如果 XML 过大，会返回清楚错误，要求改用本地 preview/derive -> CSV 流程。
+
+默认步数策略是 `prefer_watch`：同一天同时存在 Apple Watch 和 iPhone 步数时，优先使用 Apple Watch，避免默认双重计步。

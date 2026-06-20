@@ -44,6 +44,25 @@ const formatSigned = (value: number, digits = 0) => {
   return `${rounded > 0 ? "+" : ""}${rounded}`;
 };
 
+const getIdentityNotice = (elderId: string) => {
+  if (elderId === "TEST001") {
+    return {
+      badges: ["團隊 Apple Watch 測試資料", "非真實長者", "用於驗證穿戴資料導入"],
+      note: "此頁為團隊 Apple Watch 測試資料。完整照護閉環請查看陳伯 E001 Demo。",
+    };
+  }
+  if (elderId === "E001") {
+    return {
+      badges: ["陳伯 Demo 情境", "模擬長者照護流程", "活動下降 + 頭暈 + SOS + 護工跟進"],
+      note: "此頁是主照護閉環腳本，用於展示風險提示、任務建立、Agent 摘要與護工處理。",
+    };
+  }
+  return {
+    badges: ["Seeded demo elder"],
+    note: "此頁為 seeded demo elder，用於展示不同照護狀態。",
+  };
+};
+
 export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
   const { state } = useDemo();
   const profile = state.profiles[elderId] ?? state.profiles.E001;
@@ -56,6 +75,7 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
   const operationalState = state.operationalStates[profile.elderId] ?? "normal";
   const careLoopStatus = deriveCareLoopStatus(profile.elderId, state.tasks, events);
   const displayStatus = deriveDisplayStatus(risk, careLoopStatus);
+  const identityNotice = getIdentityNotice(profile.elderId);
   const stepDeviation =
     snapshot.stepsToday === null
       ? null
@@ -80,6 +100,9 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
             {formatDateTime(snapshot.lastSyncedAt)}
           </p>
           <div className="tag-row">
+            {identityNotice.badges.map((badge) => (
+              <StatusPill label={badge} tone={profile.elderId === "TEST001" ? "observation" : "stable"} key={badge} />
+            ))}
             {profile.chronicConditions.map((tag) => (
               <StatusPill label={`慢病标签：${tag}`} tone="observation" key={tag} />
             ))}
@@ -114,6 +137,7 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
               tone="stable"
             />
           </div>
+          <p className="identity-note">{identityNotice.note}</p>
           <div className="button-row page-link-row">
             <a className="text-button" href={`#/elder/${profile.elderId}/profile`}>
               查看老人档案

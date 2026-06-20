@@ -60,6 +60,8 @@ import type {
 
 const storageKey = "careband-agent-demo-state-v0.1.3";
 const chenId = "E001";
+const testAppleWatchId = "TEST001";
+const backendFallbackMessage = "後端未連接，正在使用本地 mock fallback";
 
 type BackendStatus = {
   mode: "local" | "connected" | "unavailable";
@@ -813,12 +815,14 @@ export const demoReducer = (state: DemoState, action: DemoAction): DemoState => 
       };
     }
     case "IMPORT_APPLE_HEALTH_SAMPLE": {
+      const targetId = state.profiles[testAppleWatchId] ? testAppleWatchId : chenId;
+      const baseSnapshot = state.snapshots[targetId] ?? createMissingSnapshot(targetId);
       return {
         ...state,
         snapshots: {
           ...state.snapshots,
-          [chenId]: {
-            ...state.snapshots[chenId],
+          [targetId]: {
+            ...baseSnapshot,
             snapshotId: "LOCAL-APPLE-HEALTH-SAMPLE",
             dataSource: "Apple Health Export",
             dataQuality: 88,
@@ -833,8 +837,8 @@ export const demoReducer = (state: DemoState, action: DemoAction): DemoState => 
           },
         },
         events: addEventOnce(state.events, {
-          eventId: "EVT-E001-APPLE-HEALTH-IMPORT",
-          elderId: chenId,
+          eventId: `EVT-${targetId}-APPLE-HEALTH-IMPORT`,
+          elderId: targetId,
           eventType: "system_risk_update",
           timestamp: new Date().toISOString(),
           title: "已导入 Apple Health Export 示例快照",
@@ -908,11 +912,12 @@ export const DemoProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     refreshDashboard().catch((error) => {
+      console.warn("CareBand backend dashboard fallback:", error);
       rawDispatch({
         type: "SET_BACKEND_STATUS",
         payload: {
           mode: "unavailable",
-          error: error.message,
+          error: backendFallbackMessage,
         },
       });
     });
@@ -981,7 +986,7 @@ export const DemoProvider = ({ children }: { children: ReactNode }) => {
 
           if (action.type === "IMPORT_APPLE_HEALTH_SAMPLE") {
             await apiPostSnapshot({
-              elder_id: chenId,
+              elder_id: testAppleWatchId,
               date: new Date().toISOString().slice(0, 10),
               data_source: "Apple Health Export",
               heart_rate_avg: 84,
@@ -1061,11 +1066,12 @@ export const DemoProvider = ({ children }: { children: ReactNode }) => {
 
           rawDispatch(action);
         } catch (error) {
+          console.warn("CareBand backend action fallback:", error);
           rawDispatch({
             type: "SET_BACKEND_STATUS",
             payload: {
               mode: "unavailable",
-              error: error instanceof Error ? error.message : "Backend request failed.",
+              error: backendFallbackMessage,
             },
           });
           rawDispatch(action);

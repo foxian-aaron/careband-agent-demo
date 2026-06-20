@@ -19,6 +19,16 @@ interface ElderSummaryCardProps {
   task?: CareTask;
 }
 
+const identityBadges = (elderId: string) => {
+  if (elderId === "TEST001") {
+    return ["團隊 Apple Watch 測試資料", "非真實長者", "用於驗證穿戴資料導入"];
+  }
+  if (elderId === "E001") {
+    return ["陳伯 Demo 情境", "模擬長者照護流程", "活動下降 + 頭暈 + SOS"];
+  }
+  return ["Seeded demo elder"];
+};
+
 export const ElderSummaryCard = ({
   profile,
   risk,
@@ -31,6 +41,11 @@ export const ElderSummaryCard = ({
     <div>
       <span className="room-label">房间 {profile.room}</span>
       <h3>{profile.name}</h3>
+      <div className="identity-badge-row">
+        {identityBadges(profile.elderId).map((badge) => (
+          <span className="identity-badge" key={badge}>{badge}</span>
+        ))}
+      </div>
       <p>
         {profile.age} 岁 · {profile.chronicConditions.join("、") || "无慢病标签"}
       </p>

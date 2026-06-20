@@ -67,6 +67,13 @@ http://localhost:3001/#/elder/TEST001
 
 In this mode, the Express backend serves both `/api/*` and the built frontend from `dist/`.
 
+Public deployment notes:
+
+```text
+docs/deployment.md
+docs/public_demo_checklist.md
+```
+
 ## Apple Health Test Data
 
 The demo supports Apple Health Export XML and derived CSV import.
@@ -78,6 +85,12 @@ Privacy rules:
 - Do not send raw XML to any LLM or external AI service.
 - Agent analysis should only use daily aggregated snapshots.
 - `TEST001` is labelled as team member Apple Watch test data, not real elderly user data.
+
+Detailed privacy notes:
+
+```text
+docs/privacy_apple_health.md
+```
 
 Recommended safe workflow:
 
@@ -94,6 +107,25 @@ private_data/derived/apple_watch_daily_snapshots.csv
 ```
 
 It is ignored by Git.
+
+Step source strategy defaults to `prefer_watch`, so Apple Watch step records are used before iPhone step records when both exist on the same day.
+
+Reset local seeded demo data when preparing a repeatable presentation:
+
+```bash
+npm run seed:reset
+```
+
+Review and presentation docs:
+
+```text
+docs/review_pr_checklist.md
+docs/pr_description.md
+docs/demo_personas.md
+docs/demo_script_chenbo.md
+docs/demo_script_test001_apple_watch.md
+docs/apple_health_import_report.template.md
+```
 
 ## API Highlights
 

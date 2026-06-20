@@ -9,11 +9,17 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendRoot = path.resolve(__dirname, "..");
 const projectRoot = path.resolve(backendRoot, "..");
+const privateDataRoot = path.join(projectRoot, "private_data");
+const privateDerivedRoot = path.join(privateDataRoot, "derived");
 
 const parseArgs = (argv) => {
   const [xmlPath, ...flags] = argv;
-  const options = { elderId: "TEST001", limitDays: 14 };
-  let outputPath = path.join(projectRoot, "private_data", "derived", "apple_watch_daily_snapshots.csv");
+  const options = {
+    elderId: "TEST001",
+    limitDays: 14,
+    stepSourceStrategy: process.env.APPLE_HEALTH_STEP_SOURCE_STRATEGY ?? "prefer_watch",
+  };
+  let outputPath = path.join(privateDerivedRoot, "apple_watch_daily_snapshots.csv");
 
   for (const flag of flags) {
     const [key, value] = flag.replace(/^--/, "").split("=");
@@ -21,6 +27,7 @@ const parseArgs = (argv) => {
     if (key === "start-date") options.startDate = value;
     if (key === "end-date") options.endDate = value;
     if (key === "limit-days") options.limitDays = value;
+    if (key === "step-source-strategy") options.stepSourceStrategy = value;
     if (key === "output") outputPath = path.resolve(process.cwd(), value);
   }
 
@@ -39,6 +46,12 @@ if (!fs.existsSync(resolvedPath)) {
   console.error(`File not found: ${resolvedPath}`);
   process.exit(1);
 }
+if (!resolvedPath.startsWith(`${privateDataRoot}${path.sep}`)) {
+  console.warn("Privacy warning: Apple Health XML should stay under private_data/ and must not be committed.");
+}
+if (!outputPath.startsWith(`${privateDerivedRoot}${path.sep}`)) {
+  console.warn("Privacy warning: derived Apple Health CSV should normally be written under private_data/derived/.");
+}
 const { snapshots, preview } = await analyzeAppleHealthXmlFile(resolvedPath, options);
 
 fs.mkdirSync(path.dirname(outputPath), { recursive: true });
@@ -51,5 +64,7 @@ console.log(JSON.stringify({
     start: snapshots[0]?.date ?? null,
     end: snapshots[snapshots.length - 1]?.date ?? null,
   },
+  step_source_strategy: preview.step_source_strategy,
+  sleep_grouping_strategy: preview.sleep_grouping_strategy,
   warnings: preview.warnings,
 }, null, 2));

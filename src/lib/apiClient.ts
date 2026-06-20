@@ -5,13 +5,41 @@ const isLocalViteDev =
   window.location.port === "5173";
 export const API_BASE_URL = env.VITE_API_BASE_URL ?? (isLocalViteDev ? "http://localhost:3001" : "");
 
-const withTimeout = async <T>(request: Promise<Response>, timeoutMs = 2500): Promise<T> => {
-  const response = await Promise.race([
-    request,
-    new Promise<Response>((_, reject) =>
-      window.setTimeout(() => reject(new Error("API request timed out")), timeoutMs),
-    ),
-  ]);
+const API_TIMEOUT_MS = Number(env.VITE_API_TIMEOUT_MS ?? 8000);
+const AGENT_TIMEOUT_MS = Number(env.VITE_AGENT_TIMEOUT_MS ?? 30000);
+
+const previewText = (value: string) => value.replace(/\s+/g, " ").trim().slice(0, 160);
+
+export const requestJson = async <T>(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs = API_TIMEOUT_MS,
+): Promise<T> => {
+  const controller = new AbortController();
+  const timeout = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error(`API request timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    globalThis.clearTimeout(timeout);
+  }
+
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    const text = await response.text();
+    throw new Error(
+      `API did not return JSON. status=${response.status}, content-type=${contentType || "unknown"}, preview=${previewText(text)}`,
+    );
+  }
 
   const payload = (await response.json()) as T & { ok?: boolean; error?: string };
   if (!response.ok || payload.ok === false) {
@@ -21,48 +49,52 @@ const withTimeout = async <T>(request: Promise<Response>, timeoutMs = 2500): Pro
 };
 
 export const apiGetDashboard = () =>
-  withTimeout<BackendDashboardResponse>(fetch(`${API_BASE_URL}/api/dashboard`));
+  requestJson<BackendDashboardResponse>(`${API_BASE_URL}/api/dashboard`);
 
 export const apiPostSnapshot = (snapshot: BackendSnapshotInput) =>
-  withTimeout<{ ok: true; snapshot: BackendSnapshot }>(
-    fetch(`${API_BASE_URL}/api/snapshots`, {
+  requestJson<{ ok: true; snapshot: BackendSnapshot }>(
+    `${API_BASE_URL}/api/snapshots`,
+    {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(snapshot),
-    }),
+    },
   );
 
 export const apiPostEvent = (event: BackendEventInput) =>
-  withTimeout<{
+  requestJson<{
     ok: true;
     event: BackendEvent;
     risk_result: BackendRiskResult;
     task: BackendTask | null;
   }>(
-    fetch(`${API_BASE_URL}/api/events`, {
+    `${API_BASE_URL}/api/events`,
+    {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(event),
-    }),
+    },
   );
 
 export const apiPatchTask = (taskId: string, changes: BackendTaskPatch) =>
-  withTimeout<{ ok: true; task: BackendTask }>(
-    fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+  requestJson<{ ok: true; task: BackendTask }>(
+    `${API_BASE_URL}/api/tasks/${taskId}`,
+    {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(changes),
-    }),
+    },
   );
 
 export const apiAnalyzeAgent = (input: BackendAgentAnalyzeInput) =>
-  withTimeout<BackendAgentOutput>(
-    fetch(`${API_BASE_URL}/api/agent/analyze`, {
+  requestJson<BackendAgentOutput>(
+    `${API_BASE_URL}/api/agent/analyze`,
+    {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
-    }),
-    10000,
+    },
+    AGENT_TIMEOUT_MS,
   );
 
 export interface BackendDashboardResponse {

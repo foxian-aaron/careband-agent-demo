@@ -3,7 +3,7 @@ import readline from "node:readline";
 import { XMLParser } from "fast-xml-parser";
 import { snapshotSchema } from "../validators.js";
 
-const types = {
+export const APPLE_HEALTH_TYPES = {
   steps: "HKQuantityTypeIdentifierStepCount",
   heartRate: "HKQuantityTypeIdentifierHeartRate",
   restingHeartRate: "HKQuantityTypeIdentifierRestingHeartRate",
@@ -11,7 +11,7 @@ const types = {
   sleep: "HKCategoryTypeIdentifierSleepAnalysis",
 };
 
-const supportedTypes = new Set(Object.values(types));
+const supportedTypes = new Set(Object.values(APPLE_HEALTH_TYPES));
 
 const asleepValues = new Set([
   "HKCategoryValueSleepAnalysisAsleep",
@@ -34,16 +34,53 @@ const csvHeaders = [
   "data_quality",
 ];
 
-const pad = (value) => String(value).padStart(2, "0");
-const dateKey = (date) =>
-  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+const appleTimestampPattern =
+  /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})(?:\s*([+-])(\d{2})(\d{2}))?$/;
 
-const parseAppleDate = (value) => {
+export function getAppleLocalDateTimeParts(value) {
   if (!value || typeof value !== "string") return null;
-  const localPart = value.slice(0, 19).replace(" ", "T");
-  const parsed = new Date(localPart);
+  const match = value.match(appleTimestampPattern);
+  if (!match) return null;
+
+  const [, year, month, day, hour, minute, second, sign, offsetHour, offsetMinute] = match;
+  const offsetMinutes =
+    sign && offsetHour && offsetMinute
+      ? (sign === "-" ? -1 : 1) * (Number(offsetHour) * 60 + Number(offsetMinute))
+      : null;
+
+  return {
+    year: Number(year),
+    month: Number(month),
+    day: Number(day),
+    hour: Number(hour),
+    minute: Number(minute),
+    second: Number(second),
+    offsetMinutes,
+    dateKey: `${year}-${month}-${day}`,
+    hasExplicitTimezone: offsetMinutes !== null,
+  };
+}
+
+export function parseAppleHealthTimestamp(value) {
+  const parts = getAppleLocalDateTimeParts(value);
+  if (!parts) return null;
+
+  const utcMillis = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+  );
+  const offsetMillis = (parts.offsetMinutes ?? 0) * 60 * 1000;
+  const parsed = new Date(utcMillis - offsetMillis);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
+}
+
+export function getAppleLocalDateKey(value) {
+  return getAppleLocalDateTimeParts(value)?.dateKey ?? null;
+}
 
 const numberOrNull = (value) => {
   const numeric = Number(value);
@@ -61,6 +98,13 @@ const normalizeLimitDays = (value, fallback = null) => {
   return Number.isFinite(numeric) && numeric > 0 ? Math.floor(numeric) : fallback;
 };
 
+const normalizeStepSourceStrategy = (value) => {
+  const strategy = value ?? process.env.APPLE_HEALTH_STEP_SOURCE_STRATEGY ?? "prefer_watch";
+  return ["prefer_watch", "all_sources", "manual_review"].includes(strategy)
+    ? strategy
+    : "prefer_watch";
+};
+
 const sanitizeSourceName = (record) => {
   const source = `${record.sourceName ?? ""} ${record.device ?? ""}`.toLowerCase();
   if (source.includes("watch")) return "Apple Watch";
@@ -70,6 +114,26 @@ const sanitizeSourceName = (record) => {
   return "Other Apple Health Source";
 };
 
+const sourceIdentity = (record) =>
+  `${record.sourceName ?? "unknown"}|${record.device ?? "unknown"}`.slice(0, 240);
+
+export function normalizeExerciseMinutes(value, unit) {
+  const numeric = numberOrNull(value);
+  if (numeric === null || numeric < 0) return { minutes: null, warning: "invalid" };
+
+  const normalizedUnit = String(unit ?? "min").trim().toLowerCase();
+  if (["min", "minute", "minutes"].includes(normalizedUnit)) {
+    return { minutes: numeric, warning: null };
+  }
+  if (["s", "sec", "second", "seconds"].includes(normalizedUnit)) {
+    return { minutes: numeric / 60, warning: "converted" };
+  }
+  if (["h", "hr", "hour", "hours"].includes(normalizedUnit)) {
+    return { minutes: numeric * 60, warning: "converted" };
+  }
+  return { minutes: null, warning: "unknown" };
+}
+
 const createRecordCounts = () => ({
   steps: 0,
   heart_rate: 0,
@@ -78,38 +142,45 @@ const createRecordCounts = () => ({
   sleep: 0,
 });
 
-const createState = (byteLength = 0) => ({
+const createState = (byteLength = 0, options = {}) => ({
   days: new Map(),
   sourceNames: new Set(),
   warnings: [],
   recordCounts: createRecordCounts(),
   invalidHeartRateCount: 0,
   invalidRestingHeartRateCount: 0,
-  nonMinuteExerciseCount: 0,
+  convertedExerciseUnitCount: 0,
+  skippedExerciseUnitCount: 0,
   hasExplicitTimezone: false,
   byteLength,
+  stepSourceStrategy: normalizeStepSourceStrategy(options.stepSourceStrategy),
 });
 
-const ensureDay = (days, date) => {
-  const key = typeof date === "string" ? date : dateKey(date);
-  if (!days.has(key)) {
-    days.set(key, {
-      date: key,
-      steps: 0,
-      stepSources: new Set(),
+const ensureDay = (days, dateKey) => {
+  if (!dateKey) return null;
+  if (!days.has(dateKey)) {
+    days.set(dateKey, {
+      date: dateKey,
+      stepRecordsBySource: new Map(),
+      stepSourceIdentities: new Map(),
+      hasStepRecord: false,
       heartRates: [],
+      hasHeartRateRecord: false,
       restingHeartRates: [],
+      hasRestingHeartRateRecord: false,
       activeMinutes: 0,
+      hasExerciseRecord: false,
       sleepIntervals: [],
+      hasSleepRecord: false,
     });
   }
-  return days.get(key);
+  return days.get(dateKey);
 };
 
 const mergeIntervals = (intervals) => {
   if (!intervals.length) return [];
   const sorted = [...intervals].sort((a, b) => a.start - b.start);
-  const merged = [sorted[0]];
+  const merged = [{ ...sorted[0] }];
 
   for (const interval of sorted.slice(1)) {
     const current = merged[merged.length - 1];
@@ -126,32 +197,42 @@ const mergeIntervals = (intervals) => {
 const intervalHours = (intervals) =>
   mergeIntervals(intervals).reduce((sum, interval) => sum + (interval.end - interval.start) / 36e5, 0);
 
-function splitSleepIntoDays(days, start, end) {
-  let cursor = new Date(start);
-  const finish = new Date(end);
-  while (cursor < finish) {
-    const nextMidnight = new Date(cursor);
-    nextMidnight.setHours(24, 0, 0, 0);
-    const segmentEnd = nextMidnight < finish ? nextMidnight : finish;
-    if (segmentEnd > cursor) {
-      const day = ensureDay(days, cursor);
-      day.sleepIntervals.push({
-        start: cursor.getTime(),
-        end: segmentEnd.getTime(),
-      });
-    }
-    cursor = segmentEnd;
-  }
-}
+const sumMapValues = (map) => [...map.values()].reduce((sum, value) => sum + value, 0);
 
-const dataQualityForDay = (snapshot) =>
+const chooseSteps = (day, state) => {
+  if (!day.hasStepRecord) return null;
+
+  const watchSteps = day.stepRecordsBySource.get("Apple Watch");
+  const hasWatch = typeof watchSteps === "number";
+  const hasNonWatch = [...day.stepRecordsBySource.keys()].some((source) => source !== "Apple Watch");
+
+  if (state.stepSourceStrategy === "prefer_watch" && hasWatch) {
+    if (hasNonWatch) {
+      state.warnings.push(
+        `Mixed step sources on ${day.date}; prefer_watch used Apple Watch and ignored non-watch step records.`,
+      );
+    }
+    if ((day.stepSourceIdentities.get("Apple Watch")?.size ?? 0) > 1) {
+      state.warnings.push(`Multiple Apple Watch step sources detected on ${day.date}; summed watch records.`);
+    }
+    return Math.round(watchSteps);
+  }
+
+  if (state.stepSourceStrategy === "manual_review") {
+    state.warnings.push(`manual_review step source strategy used on ${day.date}; review step source mix before sharing.`);
+  }
+
+  return Math.round(sumMapValues(day.stepRecordsBySource));
+};
+
+const dataQualityForDay = (day) =>
   Math.min(
     100,
-    (snapshot.steps !== null ? 25 : 0) +
-      (snapshot.heart_rate_avg !== null ? 25 : 0) +
-      (snapshot.sleep_duration !== null ? 25 : 0) +
-      (snapshot.active_minutes !== null ? 15 : 0) +
-      (snapshot.resting_heart_rate !== null ? 10 : 0),
+    (day.hasStepRecord ? 25 : 0) +
+      (day.hasHeartRateRecord ? 25 : 0) +
+      (day.hasSleepRecord ? 25 : 0) +
+      (day.hasExerciseRecord ? 15 : 0) +
+      (day.hasRestingHeartRateRecord ? 10 : 0),
   );
 
 const filterAndLimitSnapshots = (snapshots, { startDate, endDate, limitDays } = {}) => {
@@ -164,22 +245,22 @@ const filterAndLimitSnapshots = (snapshots, { startDate, endDate, limitDays } = 
   return limit ? filtered.slice(-limit) : filtered;
 };
 
-const makeSnapshot = (day, elderId) => {
+const makeSnapshot = (day, elderId, state) => {
   const sleepHours = Number(intervalHours(day.sleepIntervals).toFixed(2));
+  const activeMinutes = Number(day.activeMinutes.toFixed(1));
   const snapshot = {
     snapshot_id: `APPLE-${elderId}-${day.date}`,
     elder_id: elderId,
     date: day.date,
     data_source: "Apple Health Export",
-    heart_rate_avg: average(day.heartRates),
-    resting_heart_rate: average(day.restingHeartRates),
-    steps: Math.round(day.steps) || null,
-    active_minutes: Number(day.activeMinutes.toFixed(1)) || null,
-    sleep_duration: sleepHours || null,
+    heart_rate_avg: day.hasHeartRateRecord ? average(day.heartRates) : null,
+    resting_heart_rate: day.hasRestingHeartRateRecord ? average(day.restingHeartRates) : null,
+    steps: chooseSteps(day, state),
+    active_minutes: day.hasExerciseRecord ? activeMinutes : null,
+    sleep_duration: day.hasSleepRecord ? sleepHours : null,
     wear_time_hours: null,
-    data_quality: 0,
+    data_quality: dataQualityForDay(day),
   };
-  snapshot.data_quality = dataQualityForDay(snapshot);
   return snapshotSchema.parse(snapshot);
 };
 
@@ -222,7 +303,8 @@ const addSnapshotWarnings = (warnings, snapshots, days) => {
     if (snapshot.data_quality < 40) {
       warnings.push(`Data quality below 40 on ${snapshot.date}.`);
     }
-    if ((days.get(snapshot.date)?.stepSources.size ?? 0) > 1) {
+    const day = days.get(snapshot.date);
+    if ((day?.stepRecordsBySource.size ?? 0) > 1) {
       warnings.push(`Possible duplicated step sources on ${snapshot.date}.`);
     }
   }
@@ -231,81 +313,101 @@ const addSnapshotWarnings = (warnings, snapshots, days) => {
 function processRecord(record, state) {
   if (!record || !record.type) return;
   const sourceName = sanitizeSourceName(record);
-  const startDate = parseAppleDate(record.startDate);
-  const endDate = parseAppleDate(record.endDate) ?? startDate;
-  if (/\s[+-]\d{4}$/.test(record.startDate ?? "")) state.hasExplicitTimezone = true;
+  const startDate = parseAppleHealthTimestamp(record.startDate);
+  const endDate = parseAppleHealthTimestamp(record.endDate) ?? startDate;
+  const startDateKey = getAppleLocalDateKey(record.startDate);
+  const endDateKey = getAppleLocalDateKey(record.endDate) ?? startDateKey;
+  const startParts = getAppleLocalDateTimeParts(record.startDate);
+  if (startParts?.hasExplicitTimezone) state.hasExplicitTimezone = true;
 
   if (supportedTypes.has(record.type)) {
     state.sourceNames.add(sourceName);
   }
 
-  if (!startDate) return;
+  if (!startDate || !startDateKey) return;
 
-  if (record.type === types.steps) {
+  if (record.type === APPLE_HEALTH_TYPES.steps) {
     state.recordCounts.steps += 1;
     const value = numberOrNull(record.value);
     if (value !== null && value >= 0) {
-      const day = ensureDay(state.days, startDate);
-      day.steps += value;
-      day.stepSources.add(sourceName);
+      const day = ensureDay(state.days, startDateKey);
+      day.hasStepRecord = true;
+      day.stepRecordsBySource.set(sourceName, (day.stepRecordsBySource.get(sourceName) ?? 0) + value);
+      if (!day.stepSourceIdentities.has(sourceName)) day.stepSourceIdentities.set(sourceName, new Set());
+      day.stepSourceIdentities.get(sourceName).add(sourceIdentity(record));
     }
   }
 
-  if (record.type === types.heartRate) {
+  if (record.type === APPLE_HEALTH_TYPES.heartRate) {
     state.recordCounts.heart_rate += 1;
     const value = numberOrNull(record.value);
     if (value !== null && value >= 30 && value <= 220) {
-      ensureDay(state.days, startDate).heartRates.push(value);
+      const day = ensureDay(state.days, startDateKey);
+      day.hasHeartRateRecord = true;
+      day.heartRates.push(value);
     } else {
       state.invalidHeartRateCount += 1;
     }
   }
 
-  if (record.type === types.restingHeartRate) {
+  if (record.type === APPLE_HEALTH_TYPES.restingHeartRate) {
     state.recordCounts.resting_heart_rate += 1;
     const value = numberOrNull(record.value);
     if (value !== null && value >= 25 && value <= 180) {
-      ensureDay(state.days, startDate).restingHeartRates.push(value);
+      const day = ensureDay(state.days, startDateKey);
+      day.hasRestingHeartRateRecord = true;
+      day.restingHeartRates.push(value);
     } else {
       state.invalidRestingHeartRateCount += 1;
     }
   }
 
-  if (record.type === types.exercise) {
+  if (record.type === APPLE_HEALTH_TYPES.exercise) {
     state.recordCounts.exercise_time += 1;
-    const value = numberOrNull(record.value);
-    if (record.unit && record.unit !== "min") state.nonMinuteExerciseCount += 1;
-    if (value !== null && value >= 0) {
-      ensureDay(state.days, startDate).activeMinutes += value;
+    const result = normalizeExerciseMinutes(record.value, record.unit);
+    if (result.warning === "converted") state.convertedExerciseUnitCount += 1;
+    if (result.warning === "unknown") state.skippedExerciseUnitCount += 1;
+    if (result.minutes !== null) {
+      const day = ensureDay(state.days, startDateKey);
+      day.hasExerciseRecord = true;
+      day.activeMinutes += result.minutes;
     }
   }
 
-  if (record.type === types.sleep) {
+  if (record.type === APPLE_HEALTH_TYPES.sleep) {
     state.recordCounts.sleep += 1;
-    if (asleepValues.has(record.value) && endDate && endDate > startDate) {
-      splitSleepIntoDays(state.days, startDate, endDate);
+    if (asleepValues.has(record.value) && endDate && endDateKey && endDate >= startDate) {
+      const day = ensureDay(state.days, endDateKey);
+      day.hasSleepRecord = true;
+      day.sleepIntervals.push({
+        start: startDate.getTime(),
+        end: endDate.getTime(),
+      });
     }
   }
 }
 
 function finalizeState(state, options = {}) {
   if (state.byteLength > 80 * 1024 * 1024) {
-    state.warnings.push("Very large XML file; streaming parse was used or is recommended for production use.");
+    state.warnings.push("Very large XML file; use local preview/derive script and import daily CSV for demos.");
   }
   if (state.hasExplicitTimezone) {
-    state.warnings.push("Apple Health dates include timezone offsets; snapshots are grouped by recorded local calendar day.");
+    state.warnings.push(
+      "Apple Health dates include timezone offsets; quantity records use recorded local start date, sleep uses wake-date strategy.",
+    );
   }
   if (state.invalidHeartRateCount) state.warnings.push(`${state.invalidHeartRateCount} impossible heart-rate record(s) ignored.`);
   if (state.invalidRestingHeartRateCount) state.warnings.push(`${state.invalidRestingHeartRateCount} impossible resting heart-rate record(s) ignored.`);
-  if (state.nonMinuteExerciseCount) state.warnings.push(`${state.nonMinuteExerciseCount} exercise record(s) used non-minute units; please review unit handling.`);
+  if (state.convertedExerciseUnitCount) state.warnings.push(`${state.convertedExerciseUnitCount} non-minute exercise record(s) converted to minutes.`);
+  if (state.skippedExerciseUnitCount) state.warnings.push(`${state.skippedExerciseUnitCount} exercise record(s) with unknown unit skipped.`);
   if (state.sourceNames.has("Apple Watch") && state.sourceNames.has("iPhone")) {
-    state.warnings.push("Both Apple Watch and iPhone sources were detected; step counts may be inflated by duplicated sources.");
+    state.warnings.push(`Both Apple Watch and iPhone sources were detected; step strategy is ${state.stepSourceStrategy}.`);
   }
 
   const elderId = options.elderId ?? "TEST001";
   const allSnapshots = [...state.days.values()]
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map((day) => makeSnapshot(day, elderId));
+    .map((day) => makeSnapshot(day, elderId, state));
   const snapshots = filterAndLimitSnapshots(allSnapshots, options);
   addSnapshotWarnings(state.warnings, snapshots, state.days);
 
@@ -313,7 +415,7 @@ function finalizeState(state, options = {}) {
   const end = allSnapshots[allSnapshots.length - 1]?.date ?? null;
   if (!allSnapshots.length) state.warnings.push("No supported Apple Health daily data found.");
   if (end) {
-    const last = new Date(`${end}T00:00:00`);
+    const last = new Date(`${end}T00:00:00Z`);
     const staleDays = (Date.now() - last.getTime()) / 86400000;
     if (staleDays > 30) state.warnings.push("No recent data found in the last 30 days.");
   }
@@ -326,6 +428,8 @@ function finalizeState(state, options = {}) {
       date_range: { start, end },
       source_names: [...state.sourceNames].sort(),
       record_counts: state.recordCounts,
+      step_source_strategy: state.stepSourceStrategy,
+      sleep_grouping_strategy: "wake_date",
       sample_daily_snapshots: snapshots.slice(-5).map(sampleSnapshot),
       warnings: [...new Set(state.warnings)],
     },
@@ -341,7 +445,7 @@ export function analyzeAppleHealthXml(xmlText, options = {}) {
   const doc = parser.parse(xmlText);
   const rawRecords = doc?.HealthData?.Record ?? [];
   const records = Array.isArray(rawRecords) ? rawRecords : [rawRecords].filter(Boolean);
-  const state = createState(Buffer.byteLength(xmlText, "utf8"));
+  const state = createState(Buffer.byteLength(xmlText, "utf8"), options);
   for (const record of records) processRecord(record, state);
   return finalizeState(state, options);
 }
@@ -358,7 +462,7 @@ const parseRecordTag = (tag) => {
 };
 
 export async function analyzeAppleHealthXmlFile(filePath, options = {}) {
-  const state = createState(fs.statSync(filePath).size);
+  const state = createState(fs.statSync(filePath).size, options);
   const stream = fs.createReadStream(filePath, { encoding: "utf8", highWaterMark: 1024 * 1024 });
   const lines = readline.createInterface({ input: stream, crlfDelay: Infinity });
   let buffer = "";

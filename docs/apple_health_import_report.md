@@ -14,6 +14,8 @@
 - Derived CSV：已生成 `private_data/derived/apple_watch_daily_snapshots.csv`，只包含 DailySnapshot 聚合欄位。
 - DB 匯入：使用 `POST /api/import/daily-snapshots-csv` 匯入最近 14 天資料。
 - Snapshot id：Apple Health 匯入資料使用 `APPLE-TEST001-YYYY-MM-DD`，避免重複匯入產生 duplicate latest。
+- Step source strategy：`prefer_watch`，同日同時有 Apple Watch 與 iPhone 步數時，預設使用 Apple Watch 步數並提出 warning。
+- Sleep grouping strategy：`wake_date`，跨午夜睡眠歸到醒來當天；只統計 asleep 類別，不統計 InBed / Awake。
 
 ## 匯入摘要
 
@@ -32,8 +34,8 @@
 ## Warnings
 
 - XML 很大，demo 已使用 streaming parser；正式產品仍建議採 streaming/queue import。
-- Apple Health 日期包含 timezone offset；目前依記錄中的本地日曆日分組。
-- 同時偵測到 Apple Watch 與 iPhone 來源，步數可能存在重複來源放大的風險。
+- Apple Health 日期包含 timezone offset；數量型資料依記錄中的本地 start date 分組，睡眠依 wake date 分組。
+- 同時偵測到 Apple Watch 與 iPhone 來源；目前以 `prefer_watch` 避免預設雙重計步，仍建議人工檢查異常高步數日。
 - 最近 14 天中有 1 天缺少平均心率，6 天缺少 asleep sleep duration。
 - 2026-06-10、2026-06-14 步數超過 30000，已標記為需人工確認。
 - 2026-06-17 data_quality = 25，低於 40，若作為最新日會被視為 insufficient_data。
@@ -71,8 +73,8 @@
 
 ## 測試與建置
 
-- Backend tests：7 passed
-- Frontend Vitest：31 passed
+- Backend tests：13 passed
+- Frontend Vitest：34 passed
 - TypeScript build：passed
 - Vite build：passed
 

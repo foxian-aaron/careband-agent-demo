@@ -51,6 +51,10 @@ app.use("/api/import", importRouter);
 app.use("/api/agent", agentRouter);
 app.use("/api/tasks", tasksRouter);
 
+app.use("/api", (_req, res) => {
+  res.status(404).json({ ok: false, error: "API route not found." });
+});
+
 if (fs.existsSync(path.join(distPath, "index.html"))) {
   app.use(express.static(distPath));
   app.get("*", (req, res, next) => {

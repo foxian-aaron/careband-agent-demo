@@ -191,6 +191,32 @@ button.primary,
   gap: 8px;
 }
 
+.identity-note {
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  margin-top: 10px;
+  padding: 10px 12px;
+}
+
+.identity-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 8px;
+}
+
+.identity-badge {
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 999px;
+  color: #1d4ed8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 8px;
+}
+
 .stats-grid {
   display: grid;
   gap: 14px;
@@ -1004,6 +1030,20 @@ button.primary,
 .demo-control {
   display: grid;
   gap: 18px;
+}
+
+.target-note {
+  align-items: flex-start;
+  background: rgba(20, 184, 166, 0.08);
+  border: 1px solid rgba(20, 184, 166, 0.2);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+}
+
+.target-note span {
+  color: var(--text-secondary);
 }
 
 .control-status {

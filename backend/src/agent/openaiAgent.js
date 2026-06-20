@@ -49,6 +49,19 @@ const responseJsonSchema = {
   ],
 };
 
+const agentTimeoutMs = () => {
+  const configured = Number(process.env.AGENT_TIMEOUT_MS ?? 30000);
+  return Number.isFinite(configured) && configured > 0 ? configured : 30000;
+};
+
+const withTimeout = (promise, timeoutMs) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Agent request timed out after ${timeoutMs}ms`)), timeoutMs),
+    ),
+  ]);
+
 const buildPromptInput = (input) =>
   JSON.stringify(
     {
@@ -58,30 +71,34 @@ const buildPromptInput = (input) =>
       events: input.events,
       risk_result: input.risk_result,
       hard_safety_rule:
-        "只解释照护风险提示，不做疾病诊断，不推断未给出的医学结论。",
+        "Explain care-risk signals only. Do not invent a medical diagnosis, disease, prescription, or clinical conclusion.",
     },
     null,
     2,
   );
 
 async function runOpenAiAgent(input) {
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const timeout = agentTimeoutMs();
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout });
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
-  const response = await client.responses.create({
-    model,
-    instructions:
-      "你是老人照护场景的 AI Agent。请基于规则引擎结果生成简洁、可执行、非诊断性的照护摘要。必须输出符合 schema 的 JSON。",
-    input: buildPromptInput(input),
-    text: {
-      format: {
-        type: "json_schema",
-        name: "careband_agent_output",
-        strict: true,
-        schema: responseJsonSchema,
+  const response = await withTimeout(
+    client.responses.create({
+      model,
+      instructions:
+        "You are an elderly-care AI Agent for a demo. Generate concise, actionable, non-diagnostic caregiver, family, and institution summaries from the deterministic risk result and daily aggregate data. Return only JSON matching the schema.",
+      input: buildPromptInput(input),
+      text: {
+        format: {
+          type: "json_schema",
+          name: "careband_agent_output",
+          strict: true,
+          schema: responseJsonSchema,
+        },
       },
-    },
-  });
+    }),
+    timeout,
+  );
 
   const text = response.output_text;
   if (!text) throw new Error("OpenAI response did not include output_text.");
@@ -106,7 +123,7 @@ export async function analyzeWithFallback(input) {
   } catch (error) {
     return {
       ...runMockAgent(input),
-      warning: `OpenAI 调用失败，已自动改用 mock Agent：${error.message}`,
+      warning: `OpenAI call failed; mock Agent fallback used: ${error.message}`,
     };
   }
 }
