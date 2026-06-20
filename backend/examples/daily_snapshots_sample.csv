@@ -1,0 +1,5 @@
+elder_id,date,data_source,heart_rate_avg,resting_heart_rate,steps,active_minutes,sleep_duration,wear_time_hours,data_quality
+E001,2026-06-19,Apple Health Export,84,72,980,24,5.1,18.2,88
+E002,2026-06-19,Apple Health Export,80,76,1260,28,4.7,19.4,90
+E003,2026-06-19,Apple Health Export,76,70,1120,31,6.3,18.0,86
+E004,2026-06-19,Apple Health Export,69,68,1880,42,7.0,20.0,94
