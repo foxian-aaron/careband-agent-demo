@@ -1157,6 +1157,329 @@ button.primary,
   box-shadow: none;
 }
 
+.mock-notice {
+  background: #eef7fb;
+  border: 1px solid rgba(47, 128, 160, 0.22);
+  border-radius: 8px;
+  color: #24556b;
+  line-height: 1.65;
+  padding: 12px 14px;
+}
+
+.future-badge {
+  align-items: center;
+  background: rgba(23, 59, 87, 0.08);
+  border: 1px solid rgba(23, 59, 87, 0.18);
+  border-radius: 999px;
+  color: #173b57;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 700;
+  min-height: 30px;
+  padding: 0 10px;
+}
+
+textarea,
+select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font: inherit;
+  padding: 12px;
+  width: 100%;
+}
+
+textarea {
+  line-height: 1.65;
+  min-height: 150px;
+  resize: vertical;
+}
+
+select {
+  background: white;
+  min-height: 42px;
+}
+
+.memory-intake-form,
+.wearable-import-form,
+.simulator-panel,
+.hardware-simulator,
+.weekly-summary {
+  display: grid;
+  gap: 14px;
+}
+
+.memory-intake-form label {
+  display: grid;
+  gap: 8px;
+}
+
+.memory-section-grid,
+.source-grid,
+.device-grid,
+.band-status-grid,
+.pilot-levels,
+.agent-output-cards {
+  display: grid;
+  gap: 12px;
+}
+
+.memory-section-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 16px 0;
+}
+
+.memory-section-grid div,
+.agent-output-cards article,
+.pilot-levels article {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.memory-section-grid h3,
+.pilot-levels h3 {
+  margin: 0 0 8px;
+}
+
+.memory-section-grid p,
+.agent-output-cards p,
+.pilot-levels p,
+.weekly-summary__text,
+.mock-flow-note p {
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.memory-table textarea {
+  min-height: 84px;
+  min-width: 260px;
+}
+
+.memory-save-panel {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.source-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.source-grid button.active {
+  background: #173b57;
+  border-color: #173b57;
+  color: white;
+}
+
+.device-card {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.device-card--compact {
+  box-shadow: none;
+}
+
+.device-card__head {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.device-card__head span,
+.device-grid span,
+.agent-output-cards span {
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+}
+
+.device-card h3 {
+  margin: 4px 0 0;
+}
+
+.device-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.device-grid div {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.device-grid strong {
+  display: block;
+  margin-top: 6px;
+}
+
+.care-memory-tags {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.hardware-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 0.8fr 1.2fr;
+}
+
+.virtual-band {
+  align-items: center;
+  background: #f2f5f9;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  padding: 18px;
+}
+
+.band-face {
+  align-items: center;
+  background: #132334;
+  border-radius: 28px;
+  color: #eef7fb;
+  display: grid;
+  gap: 8px;
+  height: 210px;
+  justify-items: center;
+  padding: 18px;
+  position: relative;
+  width: 132px;
+}
+
+.led {
+  background: #7b8494;
+  border-radius: 999px;
+  height: 12px;
+  width: 12px;
+}
+
+.led--online {
+  background: var(--color-stable);
+  box-shadow: 0 0 0 5px rgba(47, 143, 91, 0.16);
+}
+
+.band-button {
+  border-radius: 999px;
+  height: 54px;
+  min-height: 54px;
+  padding: 0;
+  width: 54px;
+}
+
+.band-status-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mock-flow-note {
+  background: #fff8ed;
+  border: 1px solid rgba(197, 138, 24, 0.2);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.mock-flow-note small {
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 8px;
+}
+
+.fall-flow {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.fall-flow div {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--color-muted);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.fall-flow div.active {
+  border-left-color: var(--color-high-risk);
+}
+
+.fall-flow span {
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 6px;
+}
+
+.agent-trace-panel .agent-io-grid details {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.agent-trace-panel summary {
+  cursor: pointer;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.agent-output-cards {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.agent-output-cards article {
+  display: grid;
+  gap: 8px;
+}
+
+.agent-output-cards p {
+  color: var(--text-primary);
+}
+
+.toggle-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.toggle-row {
+  align-items: center;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.toggle-row input {
+  height: 20px;
+  width: 20px;
+}
+
+.pilot-progress strong {
+  font-size: 1.45rem;
+}
+
+.pilot-levels {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.question-list {
+  line-height: 1.8;
+  margin-bottom: 0;
+}
+
 .empty-state {
   background: var(--surface-soft);
   border: 1px dashed #bfc8d6;
@@ -1205,6 +1528,12 @@ button.primary,
   .metric-grid,
   .trend-grid,
   .control-status,
+  .memory-section-grid,
+  .source-grid,
+  .device-grid,
+  .hardware-grid,
+  .agent-output-cards,
+  .pilot-levels,
   .info-grid,
   .info-grid.compact {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1221,7 +1550,8 @@ button.primary,
   .task-card__head,
   .family-peace-card__head,
   .profile-identity,
-  .medication-hero {
+  .medication-hero,
+  .memory-save-panel {
     align-items: stretch;
     flex-direction: column;
   }
@@ -1240,8 +1570,16 @@ button.primary,
   .five-dimensions,
   .control-status,
   .current-state-card,
-    .decision-grid,
-    .trace-output-grid,
+  .memory-section-grid,
+  .source-grid,
+  .device-grid,
+  .hardware-grid,
+  .band-status-grid,
+  .fall-flow,
+  .agent-output-cards,
+  .pilot-levels,
+  .decision-grid,
+  .trace-output-grid,
   .agent-io-grid,
   .info-grid,
   .info-grid.compact {

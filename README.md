@@ -33,6 +33,19 @@ Important: GitHub Pages is static only. The `/v0.2/` public link uses mock fallb
 
 Unknown elder routes intentionally do not fallback to E001. They show `資料未載入：找不到此長者資料。`
 
+## Frontend Mock Landing Demo Added
+
+This v0.2 workspace now includes the usable front-end landing-validation demo:
+
+- `#/elder/E001/memory-intake`: Care Memory Intake with rule-based Mock AI extraction and human confirmation.
+- `#/elder/E001/wearable-import`: CSV / mock wearable import that updates DailySnapshot, device quality and 7-day trends.
+- `#/hardware-simulator`: virtual CareBand hardware events for SOS, fall, no response, low battery and not-worn states.
+- `#/backend-contract`: future API contract placeholders for events, snapshots, memory, wearable import, tasks and Agent analysis.
+- `#/privacy`: role-based consent and data-boundary view.
+- `#/pilot-plan`: Bodhi / nursing-home interview and pilot path.
+
+These additions remain front-end Mock / future integration points. They do not call QwenPaw, real wearable APIs, real hardware, Apple Health APIs, Health Connect, Fitbit, Zepp or any API-key service.
+
 ## Quick Start
 
 Install dependencies:

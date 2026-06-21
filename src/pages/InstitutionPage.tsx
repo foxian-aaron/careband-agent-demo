@@ -58,6 +58,8 @@ export const InstitutionPage = () => {
           displayStatus,
           careLoopStatus,
           snapshot: state.snapshots[profile.elderId],
+          deviceRecord: state.deviceRecords[profile.elderId],
+          memoryEstablished: Boolean(state.initialCareMemoryByElderId[profile.elderId]),
           task:
             getActiveTaskForElder(state, profile.elderId) ??
             getTaskForElder(state, profile.elderId),
@@ -107,6 +109,10 @@ export const InstitutionPage = () => {
   const sleepLow = rows.filter((row) => row.risk.dimensions.sleep === "below_baseline").length;
   const dataInsufficient = rows.filter(
     (row) => row.risk.riskLevel === "data_insufficient",
+  ).length;
+  const memoryEstablishedCount = rows.filter((row) => row.memoryEstablished).length;
+  const deviceOfflineCount = rows.filter(
+    (row) => row.deviceRecord?.connectionStatus === "offline",
   ).length;
   const institutionSummary = `今天曾有 ${metrics.todayEverHighRiskCount} 位长者触发高风险或紧急状态，其中 ${metrics.currentOpenHighRiskCount} 位仍未闭环，${metrics.followedUpHighRiskCount} 位已完成跟进。当前还有 ${metrics.pendingTaskCount} 个任务尚未接单。建议机构优先确认未闭环高风险个案，同时复盘已跟进个案的处理记录。`;
 
@@ -198,6 +204,8 @@ export const InstitutionPage = () => {
             <div><span>活动明显下降人数</span><strong>{activityDrop}</strong></div>
             <div><span>睡眠偏低人数</span><strong>{sleepLow}</strong></div>
             <div><span>数据不足人数</span><strong>{dataInsufficient}</strong></div>
+            <div><span>记忆已建立</span><strong>{memoryEstablishedCount}</strong></div>
+            <div><span>设备离线</span><strong>{deviceOfflineCount}</strong></div>
           </div>
         </article>
         <article className="panel ai-summary-card">

@@ -61,6 +61,19 @@ export const FamilyPeaceCard = ({
     </div>
     <div className="peace-grid">
       <div>
+        <span>护工跟进状态</span>
+        <strong>
+          {careLoopStatus === "pending"
+            ? "护工已收到提醒"
+            : careLoopStatus === "in_progress" || careLoopStatus === "checked"
+              ? "正在跟进"
+              : careLoopStatus === "completed" || careLoopStatus === "follow_up"
+                ? "已完成"
+                : "常规观察"}
+        </strong>
+        <p>机构端同步记录</p>
+      </div>
+      <div>
         <span>当前位置</span>
         <strong>{snapshot.locationZone}</strong>
         <p>{snapshot.safeZoneStatus === "inside" ? "在长者中心内" : "位置需确认"}</p>
@@ -81,14 +94,14 @@ export const FamilyPeaceCard = ({
         <p>{snapshot.medicationEvening === "confirmed" ? "护工已确认" : "等待护工确认"}</p>
       </div>
       <div>
-        <span>护工跟进</span>
+        <span>闭环状态</span>
         <strong>{careLoopLabels[careLoopStatus]}</strong>
         <p>{task ? taskStatusLabels[task.status] : "暂无任务"}</p>
       </div>
       <div>
         <span>最近更新</span>
         <strong>{formatDateTime(snapshot.lastSyncedAt)}</strong>
-        <p>来自模拟照护数据</p>
+        <p>来源：{snapshot.dataSource ?? "Mock Data"}（模拟）</p>
       </div>
     </div>
     <section className="family-exception">

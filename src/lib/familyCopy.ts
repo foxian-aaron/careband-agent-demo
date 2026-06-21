@@ -13,6 +13,22 @@ const latestVoiceSymptom = (events: CareEvent[]) =>
     .filter((event) => event.eventType === "voice_symptom" && event.rawText)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
 
+const latestSafetyEvent = (events: CareEvent[]) =>
+  events
+    .filter((event) =>
+      [
+        "sos",
+        "sos_long_press",
+        "sos_triple_press",
+        "fall_detected",
+        "inactivity_after_fall",
+        "no_response_after_fall",
+        "geofence_exit",
+        "wandering_help",
+      ].includes(event.eventType),
+    )
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+
 export const buildFamilyStatusMessage = (
   profile: ElderProfile,
   riskResult: RiskResult,
@@ -23,6 +39,7 @@ export const buildFamilyStatusMessage = (
   careLoopStatus: CareLoopStatus = "none",
 ) => {
   const voiceEvent = latestVoiceSymptom(events);
+  const safetyEvent = latestSafetyEvent(events);
   const inCenterText =
     snapshot.safeZoneStatus === "inside"
       ? `${profile.name}仍在长者中心内`
@@ -43,6 +60,10 @@ export const buildFamilyStatusMessage = (
 
   if (careLoopStatus === "in_progress" || activeTask?.status === "in_progress") {
     return `护工已接单，正在查看${profile.name}情况。`;
+  }
+
+  if (activeTask?.status === "pending" && safetyEvent) {
+    return `机构已收到${profile.name}的安全提醒，护工端正在按流程处理。家属端仅显示区域级信息，不展示精确轨迹。`;
   }
 
   if (voiceEvent?.rawText) {

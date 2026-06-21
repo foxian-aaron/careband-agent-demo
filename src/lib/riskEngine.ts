@@ -98,11 +98,19 @@ export const calculateRisk = ({
   events,
 }: RiskInput): RiskResult => {
   const dimensions = createBaseDimensions(snapshot);
-  const sosEvent = events.find((event) => event.eventType === "sos");
-  const fallEvent = events.find((event) => event.eventType === "fall_detected");
+  const sosEvent = events.find((event) =>
+    ["sos", "sos_long_press", "sos_triple_press"].includes(event.eventType),
+  );
+  const fallEvent = events.find((event) =>
+    ["fall_detected", "inactivity_after_fall", "no_response_after_fall"].includes(
+      event.eventType,
+    ),
+  );
   const locationOutsideEvent = events.find(
     (event) =>
-      event.eventType === "location_alert" &&
+      ["location_alert", "geofence_exit", "wandering_help"].includes(
+        event.eventType,
+      ) &&
       event.payload?.safeZoneStatus === "outside",
   );
   const severeVoiceEvent = findSymptomEvent(events, severeSymptomKeywords);
@@ -183,7 +191,9 @@ export const calculateRisk = ({
     );
   }
 
-  if (snapshot.dataCompleteness < 0.4) {
+  const deviceNotWornEvent = events.find((event) => event.eventType === "device_not_worn");
+
+  if (snapshot.dataCompleteness < 0.4 || deviceNotWornEvent) {
     return {
       elderId: profile.elderId,
       riskLevel: "data_insufficient",
@@ -195,8 +205,14 @@ export const calculateRisk = ({
         medication: "data_insufficient",
         safety: "data_insufficient",
       },
-      keyReasons: ["今日数据完整度不足，需先确认设备佩戴或数据同步"],
-      triggeredRules: ["R1 数据完整度低于 40%"],
+      keyReasons: [
+        deviceNotWornEvent
+          ? "设备未佩戴或佩戴状态异常，需先确认设备"
+          : "今日数据完整度不足，需先确认设备佩戴或数据同步",
+      ],
+      triggeredRules: [
+        deviceNotWornEvent ? "R1 设备未佩戴" : "R1 数据完整度低于 40%",
+      ],
       recommendedAction:
         "请先确认设备佩戴和数据同步，再由照护人员结合现场情况判断是否需要跟进。",
       dataCompleteness: snapshot.dataCompleteness,

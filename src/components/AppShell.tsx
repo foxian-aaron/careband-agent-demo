@@ -48,7 +48,7 @@ export const AppShell = ({ children, currentPath }: AppShellProps) => {
         <Navigation currentPath={currentPath} />
         <div className="sidebar-note">
           <strong>Demo v0.2 落地验证版</strong>
-          <p>最小后端 + SQLite + Apple Health 导入 + AI Agent fallback。</p>
+          <p>后端 fallback + 记忆初始化 + 穿戴导入 + 硬件模拟 + Agent Trace。</p>
           <small>{runtime.backendText}</small>
         </div>
       </aside>

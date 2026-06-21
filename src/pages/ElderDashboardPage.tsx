@@ -1,5 +1,9 @@
+import { AgentTracePanel } from "../components/AgentTracePanel";
 import { AgentIOPanel } from "../components/AgentIOPanel";
+import { CareMemoryTags } from "../components/CareMemoryTags";
+import { DataQualityBadge } from "../components/DataQualityBadge";
 import { DecisionTracePanel } from "../components/DecisionTracePanel";
+import { DeviceStatusCard } from "../components/DeviceStatusCard";
 import { FiveDimensionStatus } from "../components/FiveDimensionStatus";
 import { MedicalDisclaimer } from "../components/MedicalDisclaimer";
 import { MetricCard } from "../components/MetricCard";
@@ -8,6 +12,8 @@ import { StatusPill } from "../components/StatusPill";
 import { Timeline } from "../components/Timeline";
 import { TrendMiniChart } from "../components/TrendMiniChart";
 import { UnknownElderState } from "../components/UnknownElderState";
+import { WearableDataSourceBadge } from "../components/WearableDataSourceBadge";
+import { WeeklyTrendSummary } from "../components/WeeklyTrendSummary";
 import { formatDateTime } from "../lib/dateUtils";
 import { deriveCareLoopStatus, deriveDisplayStatus, displayToneToPillTone } from "../lib/displayStatus";
 import { getElderViewModel } from "../lib/elderView";
@@ -78,6 +84,8 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
   const risk = getRiskForElder(state, profile.elderId);
   const events = getEventsForElder(state, profile.elderId);
   const summaries = getAgentSummariesForElder(state, profile.elderId);
+  const memory = state.initialCareMemoryByElderId[profile.elderId];
+  const device = state.deviceRecords[profile.elderId];
   const operationalState = state.operationalStates[profile.elderId] ?? "normal";
   const careLoopStatus = deriveCareLoopStatus(profile.elderId, state.tasks, events);
   const displayStatus = deriveDisplayStatus(risk, careLoopStatus);
@@ -143,6 +151,7 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
               tone="stable"
             />
           </div>
+          <CareMemoryTags memory={memory} />
           <p className="identity-note">{identityNotice.note}</p>
           <div className="button-row page-link-row">
             <a className="text-button" href={`#/elder/${profile.elderId}/profile`}>
@@ -150,6 +159,18 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
             </a>
             <a className="text-button" href={`#/medication/${profile.elderId}`}>
               查看用药计划
+            </a>
+            <a className="text-button" href={`#/elder/${profile.elderId}/memory-intake`}>
+              导入历史资料
+            </a>
+            <a className="text-button" href={`#/elder/${profile.elderId}/wearable-import`}>
+              穿戴数据导入
+            </a>
+            <a className="text-button" href="#/hardware-simulator">
+              打开硬件模拟器
+            </a>
+            <a className="text-button" href={`#/elder/${profile.elderId}/privacy`}>
+              授权与隐私
             </a>
             {profile.elderId === "TEST001" ? (
               <a className="text-button" href="#/elder/E001">
@@ -166,6 +187,25 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
           <RiskBadge level={risk.riskLevel} score={risk.riskScore} />
         </div>
       </header>
+
+      <section className="two-column">
+        <DeviceStatusCard device={device} />
+        <article className="panel">
+          <div className="section-title">
+            <span>数据接入状态</span>
+            <h2>Backend / Mock / Wearable Import</h2>
+          </div>
+          <div className="tag-row">
+            <WearableDataSourceBadge source={snapshot.dataSource ?? device?.dataSource} />
+            <DataQualityBadge quality={snapshot.dataCompleteness} />
+            <StatusPill label={memory ? "初始照护记忆：已建立" : "初始照护记忆：未建立"} tone={memory ? "stable" : "muted"} />
+            <StatusPill label="动态状态基线：建立中" tone="observation" />
+          </div>
+          <p className="muted-copy">
+            当前支持 v0.2 后端 fallback、Apple Health Export 示例和前端 Mock 穿戴导入。真实接入时可替换为 Apple Health / Health Connect / Fitbit / Zepp。
+          </p>
+        </article>
+      </section>
 
       <section className="current-state-card">
         <div>
@@ -368,6 +408,8 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
         summaries={summaries}
         trace={summaries.decisionTrace}
       />
+      <AgentTracePanel elderId={profile.elderId} />
+      <WeeklyTrendSummary elderId={profile.elderId} />
       <AgentIOPanel
         baseline={baseline}
         events={events}

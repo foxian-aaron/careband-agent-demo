@@ -2,6 +2,7 @@ import type { Dispatch } from "react";
 import type { DemoAction, DemoState } from "../store/demoStore";
 import {
   getActiveTaskForElder,
+  getAgentTraceForElder,
   getEventsForElder,
   getRiskForElder,
 } from "../store/demoStore";
@@ -160,6 +161,79 @@ export const DemoControlPanel = ({ state, dispatch }: DemoControlPanelProps) => 
         </button>
         <button onClick={() => dispatch({ type: "IMPORT_APPLE_HEALTH_SAMPLE" })}>
           导入 TEST001 Apple Health 示例快照
+        </button>
+        <a className="text-button" href={`#/elder/${chenId}/memory-intake`}>
+          导入历史资料
+        </a>
+        <a className="text-button" href={`#/elder/${chenId}/wearable-import`}>
+          导入穿戴数据
+        </a>
+        <button
+          onClick={() =>
+            dispatch({ type: "TRIGGER_HARDWARE_EVENT", elderId: chenId, eventType: "sos_long_press" })
+          }
+        >
+          长按 SOS
+        </button>
+        <button
+          onClick={() =>
+            dispatch({ type: "TRIGGER_HARDWARE_EVENT", elderId: chenId, eventType: "fall_detected" })
+          }
+        >
+          模拟跌倒
+        </button>
+        <button
+          onClick={() =>
+            dispatch({ type: "TRIGGER_HARDWARE_EVENT", elderId: chenId, eventType: "no_response_after_fall" })
+          }
+        >
+          模拟无回应
+        </button>
+        <button
+          onClick={() =>
+            dispatch({ type: "TRIGGER_HARDWARE_EVENT", elderId: chenId, eventType: "device_not_worn" })
+          }
+        >
+          模拟设备未佩戴
+        </button>
+        <button onClick={() => dispatch({ type: "SIMULATE_GEOFENCE_EXIT", elderId: chenId })}>
+          模拟离开安全区
+        </button>
+        <button onClick={() => dispatch({ type: "SIMULATE_AGENT_FAILURE", elderId: chenId })}>
+          模拟 Agent 失败
+        </button>
+        <button
+          onClick={() =>
+            dispatch({
+              type: "FALLBACK_TO_RULE_SUMMARY",
+              trace: { ...getAgentTraceForElder(state, chenId), status: "fallback_rule" },
+            })
+          }
+        >
+          模拟 Agent fallback
+        </button>
+        <button
+          onClick={() =>
+            dispatch({
+              type: "GENERATE_WEEKLY_SUMMARY",
+              summary: {
+                elderId: chenId,
+                generatedAt: new Date().toISOString(),
+                findings: [
+                  "活动量连续 3 天下滑",
+                  "睡眠连续 2 天低于本人基线",
+                  "本周 2 次晚药延迟确认",
+                  "本周 1 次头晕反馈",
+                  "设备佩戴稳定性：82%",
+                ],
+                summary:
+                  "近 7 日陈伯活动量呈下降趋势，睡眠连续两天低于个人基线，晚药确认存在延迟。建议护工下周重点关注活动能力、晚药确认和头晕反馈是否重复出现。",
+                wearStability: 0.82,
+              },
+            })
+          }
+        >
+          生成周报
         </button>
       </div>
       <div className="panel">
