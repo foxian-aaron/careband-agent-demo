@@ -1,9 +1,5 @@
-import { AgentTracePanel } from "../components/AgentTracePanel";
 import { AgentIOPanel } from "../components/AgentIOPanel";
-import { CareMemoryTags } from "../components/CareMemoryTags";
-import { DataQualityBadge } from "../components/DataQualityBadge";
 import { DecisionTracePanel } from "../components/DecisionTracePanel";
-import { DeviceStatusCard } from "../components/DeviceStatusCard";
 import { FiveDimensionStatus } from "../components/FiveDimensionStatus";
 import { MedicalDisclaimer } from "../components/MedicalDisclaimer";
 import { MetricCard } from "../components/MetricCard";
@@ -11,12 +7,8 @@ import { RiskBadge } from "../components/RiskBadge";
 import { StatusPill } from "../components/StatusPill";
 import { Timeline } from "../components/Timeline";
 import { TrendMiniChart } from "../components/TrendMiniChart";
-import { UnknownElderState } from "../components/UnknownElderState";
-import { WearableDataSourceBadge } from "../components/WearableDataSourceBadge";
-import { WeeklyTrendSummary } from "../components/WeeklyTrendSummary";
 import { formatDateTime } from "../lib/dateUtils";
 import { deriveCareLoopStatus, deriveDisplayStatus, displayToneToPillTone } from "../lib/displayStatus";
-import { getElderViewModel } from "../lib/elderView";
 import {
   medicationLabels,
   operationalLabels,
@@ -47,49 +39,18 @@ const metricTone = (deviation: number | null) => {
   return "stable" as const;
 };
 
-const formatSigned = (value: number, digits = 0) => {
-  const rounded = Number(value.toFixed(digits));
-  return `${rounded > 0 ? "+" : ""}${rounded}`;
-};
-
-const getIdentityNotice = (elderId: string) => {
-  if (elderId === "TEST001") {
-    return {
-      badges: [
-        "團隊 Apple Watch 測試資料",
-        "非真實長者",
-        "驗證真實穿戴資料導入",
-        "不作為真實老人健康結論",
-      ],
-      note: "此頁為團隊 Apple Watch 測試資料。完整照護閉環請查看陳伯 E001 Demo。",
-    };
-  }
-  if (elderId === "E001") {
-    return {
-      badges: ["陳伯 Demo 情境", "模擬長者照護流程", "活動下降 + 頭暈 + SOS + 護工跟進"],
-      note: "此頁是主照護閉環腳本，用於展示風險提示、任務建立、Agent 摘要與護工處理。",
-    };
-  }
-  return {
-    badges: ["Seeded demo elder"],
-    note: "此頁為 seeded demo elder，用於展示不同照護狀態。",
-  };
-};
-
 export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
   const { state } = useDemo();
-  const viewModel = getElderViewModel(state, elderId);
-  if (!viewModel.found) return <UnknownElderState elderId={elderId} />;
-  const { profile, baseline, snapshot, trend } = viewModel;
+  const profile = state.profiles[elderId] ?? state.profiles.E001;
+  const baseline = state.baselines[profile.elderId];
+  const snapshot = state.snapshots[profile.elderId];
   const risk = getRiskForElder(state, profile.elderId);
   const events = getEventsForElder(state, profile.elderId);
   const summaries = getAgentSummariesForElder(state, profile.elderId);
-  const memory = state.initialCareMemoryByElderId[profile.elderId];
-  const device = state.deviceRecords[profile.elderId];
+  const trend = state.trends[profile.elderId];
   const operationalState = state.operationalStates[profile.elderId] ?? "normal";
   const careLoopStatus = deriveCareLoopStatus(profile.elderId, state.tasks, events);
   const displayStatus = deriveDisplayStatus(risk, careLoopStatus);
-  const identityNotice = getIdentityNotice(profile.elderId);
   const stepDeviation =
     snapshot.stepsToday === null
       ? null
@@ -114,9 +75,6 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
             {formatDateTime(snapshot.lastSyncedAt)}
           </p>
           <div className="tag-row">
-            {identityNotice.badges.map((badge) => (
-              <StatusPill label={badge} tone={profile.elderId === "TEST001" ? "observation" : "stable"} key={badge} />
-            ))}
             {profile.chronicConditions.map((tag) => (
               <StatusPill label={`慢病标签：${tag}`} tone="observation" key={tag} />
             ))}
@@ -127,32 +85,7 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
               label={`数据完整度 ${Math.round(snapshot.dataCompleteness * 100)}%`}
               tone={snapshot.dataCompleteness < 0.4 ? "muted" : "stable"}
             />
-            <StatusPill
-              label={`数据来源：${snapshot.dataSource ?? "本地 Mock"}`}
-              tone={snapshot.dataSource === "Apple Health Export" ? "observation" : "stable"}
-            />
-            <StatusPill
-              label={`数据质量 ${Math.round(snapshot.dataQuality ?? snapshot.dataCompleteness * 100)}%`}
-              tone={(snapshot.dataQuality ?? snapshot.dataCompleteness * 100) < 40 ? "muted" : "stable"}
-            />
-            <StatusPill label={`快照日期：${snapshot.date}`} tone="stable" />
-            <StatusPill
-              label={`基線狀態：${baseline.baselineLabel ?? "7日基線"}${
-                baseline.usableDays !== undefined ? `（${baseline.usableDays} 天）` : ""
-              }`}
-              tone={(baseline.usableDays ?? 7) < 3 ? "observation" : "stable"}
-            />
-            <StatusPill
-              label={`靜息心率：${
-                snapshot.restingHeartRate === null || snapshot.restingHeartRate === undefined
-                  ? "缺失"
-                  : `${snapshot.restingHeartRate} bpm`
-              }`}
-              tone="stable"
-            />
           </div>
-          <CareMemoryTags memory={memory} />
-          <p className="identity-note">{identityNotice.note}</p>
           <div className="button-row page-link-row">
             <a className="text-button" href={`#/elder/${profile.elderId}/profile`}>
               查看老人档案
@@ -160,23 +93,6 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
             <a className="text-button" href={`#/medication/${profile.elderId}`}>
               查看用药计划
             </a>
-            <a className="text-button" href={`#/elder/${profile.elderId}/memory-intake`}>
-              导入历史资料
-            </a>
-            <a className="text-button" href={`#/elder/${profile.elderId}/wearable-import`}>
-              穿戴数据导入
-            </a>
-            <a className="text-button" href="#/hardware-simulator">
-              打开硬件模拟器
-            </a>
-            <a className="text-button" href={`#/elder/${profile.elderId}/privacy`}>
-              授权与隐私
-            </a>
-            {profile.elderId === "TEST001" ? (
-              <a className="text-button" href="#/elder/E001">
-                查看陳伯照護閉環 Demo
-              </a>
-            ) : null}
           </div>
         </div>
         <div className="hero-status-stack">
@@ -187,25 +103,6 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
           <RiskBadge level={risk.riskLevel} score={risk.riskScore} />
         </div>
       </header>
-
-      <section className="two-column">
-        <DeviceStatusCard device={device} />
-        <article className="panel">
-          <div className="section-title">
-            <span>数据接入状态</span>
-            <h2>Backend / Mock / Wearable Import</h2>
-          </div>
-          <div className="tag-row">
-            <WearableDataSourceBadge source={snapshot.dataSource ?? device?.dataSource} />
-            <DataQualityBadge quality={snapshot.dataCompleteness} />
-            <StatusPill label={memory ? "初始照护记忆：已建立" : "初始照护记忆：未建立"} tone={memory ? "stable" : "muted"} />
-            <StatusPill label="动态状态基线：建立中" tone="observation" />
-          </div>
-          <p className="muted-copy">
-            当前支持 v0.2 后端 fallback、Apple Health Export 示例和前端 Mock 穿戴导入。真实接入时可替换为 Apple Health / Health Connect / Fitbit / Zepp。
-          </p>
-        </article>
-      </section>
 
       <section className="current-state-card">
         <div>
@@ -248,34 +145,10 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
             deviation={
               snapshot.heartRate === null
                 ? "数据缺失"
-                : `${formatSigned(snapshot.heartRate - baseline.restingHrBaseline, 1)} bpm`
+                : `+${snapshot.heartRate - baseline.restingHrBaseline} bpm`
             }
             explanation="只与本人静息基线对比，用于照护关注，不做医疗诊断。"
             tone={snapshot.heartRate && snapshot.heartRate - baseline.restingHrBaseline >= 12 ? "observation" : "stable"}
-          />
-          <MetricCard
-            title="靜息心率"
-            todayValue={
-              snapshot.restingHeartRate === null || snapshot.restingHeartRate === undefined
-                ? "缺失"
-                : `${snapshot.restingHeartRate} bpm`
-            }
-            baselineValue={`${baseline.restingHrBaseline} bpm`}
-            deviation={
-              snapshot.restingHeartRate === null || snapshot.restingHeartRate === undefined
-                ? "數據缺失"
-                : `${snapshot.restingHeartRate - baseline.restingHrBaseline > 0 ? "+" : ""}${
-                    snapshot.restingHeartRate - baseline.restingHrBaseline
-                  } bpm`
-            }
-            explanation="Apple Health Export 的靜息心率只用於和個人基線對照。"
-            tone={
-              snapshot.restingHeartRate !== null &&
-              snapshot.restingHeartRate !== undefined &&
-              Math.abs(snapshot.restingHeartRate - baseline.restingHrBaseline) >= 12
-                ? "observation"
-                : "stable"
-            }
           />
           <MetricCard
             title="步数"
@@ -330,12 +203,12 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
             tone={snapshot.wearTimeHours >= 12 ? "stable" : "muted"}
           />
           <MetricCard
-            title="数据质量"
-            todayValue={`${Math.round(snapshot.dataQuality ?? snapshot.dataCompleteness * 100)}%`}
+            title="数据完整度"
+            todayValue={`${Math.round(snapshot.dataCompleteness * 100)}%`}
             baselineValue={`基线置信度 ${Math.round(baseline.baselineConfidence * 100)}%`}
-            deviation={snapshot.dataSource ?? "本地 Mock"}
-            explanation="数据质量低时系统会优先提示确认设备佩戴，不做过度判断。"
-            tone={(snapshot.dataQuality ?? snapshot.dataCompleteness * 100) < 40 ? "muted" : "stable"}
+            deviation={snapshot.dataCompleteness < 0.4 ? "数据不足" : "可用于判断"}
+            explanation="数据不足时系统会优先提示确认设备佩戴，不做过度判断。"
+            tone={snapshot.dataCompleteness < 0.4 ? "muted" : "stable"}
           />
         </div>
       </section>
@@ -408,8 +281,6 @@ export const ElderDashboardPage = ({ elderId }: ElderDashboardPageProps) => {
         summaries={summaries}
         trace={summaries.decisionTrace}
       />
-      <AgentTracePanel elderId={profile.elderId} />
-      <WeeklyTrendSummary elderId={profile.elderId} />
       <AgentIOPanel
         baseline={baseline}
         events={events}

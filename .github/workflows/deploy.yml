@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - careband-v0.2-apple-health
   workflow_dispatch:
 
 permissions:

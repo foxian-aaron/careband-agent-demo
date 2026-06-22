@@ -7,7 +7,7 @@ import type {
 import type { CareLoopStatus } from "./displayStatus";
 
 export const medicalDisclaimer =
-  "本結果僅為照護風險提示，不構成醫療診斷。";
+  "本系统仅用于照护风险提示，不构成医疗诊断。如出现持续不适或紧急情况，请由照护人员或专业医疗人员判断处理。";
 
 export const riskLabels: Record<RiskLevel, string> = {
   data_insufficient: "数据不足",

@@ -1,7 +1,5 @@
 import type {
   CareTask,
-  DailySnapshot,
-  DeviceRecord,
   DimensionStatus,
   ElderProfile,
   OperationalState,
@@ -26,9 +24,6 @@ export interface HeatmapRow {
   displayStatus: DisplayStatus;
   careLoopStatus: CareLoopStatus;
   task?: CareTask;
-  snapshot?: DailySnapshot;
-  deviceRecord?: DeviceRecord;
-  memoryEstablished: boolean;
   operationalState: OperationalState;
   recentCareRecord?: string;
 }
@@ -58,21 +53,18 @@ export const InstitutionHeatmap = ({ rows }: InstitutionHeatmapProps) => (
           <th>房间</th>
           <th>前台展示状态</th>
           <th>今日风险等级</th>
-          <th>数据来源</th>
           <th>生命体征</th>
           <th>活动</th>
           <th>睡眠</th>
           <th>用药</th>
           <th>安全</th>
-          <th>设备状态</th>
-          <th>照护记忆</th>
           <th>任务状态</th>
           <th>最近处理记录</th>
           <th>操作</th>
         </tr>
       </thead>
       <tbody>
-        {rows.map(({ profile, risk, displayStatus, careLoopStatus, task, snapshot, deviceRecord, memoryEstablished, operationalState, recentCareRecord }) => (
+        {rows.map(({ profile, risk, displayStatus, careLoopStatus, task, operationalState, recentCareRecord }) => (
           <tr key={profile.elderId}>
             <td>
               <strong>{profile.name}</strong>
@@ -91,10 +83,6 @@ export const InstitutionHeatmap = ({ rows }: InstitutionHeatmapProps) => (
             <td>
               <RiskBadge level={risk.riskLevel} score={risk.riskScore} />
               <span>{riskLabels[risk.riskLevel]}</span>
-            </td>
-            <td>
-              <strong>{snapshot?.dataSource ?? "本地 Mock"}</strong>
-              <span>质量 {Math.round(snapshot?.dataQuality ?? risk.dataCompleteness * 100)}%</span>
             </td>
             <DimensionCell
               label={dimensionLabels[risk.dimensions.vitals]}
@@ -116,18 +104,6 @@ export const InstitutionHeatmap = ({ rows }: InstitutionHeatmapProps) => (
               label={dimensionLabels[risk.dimensions.safety]}
               status={risk.dimensions.safety}
             />
-            <td>
-              <strong>{deviceRecord?.connectionStatus === "online" ? "在线" : "离线"}</strong>
-              <span>{deviceRecord?.wearStatus === "worn" ? "已佩戴" : "未佩戴"}</span>
-              <span>完整度 {Math.round((deviceRecord?.dataQuality ?? risk.dataCompleteness) * 100)}%</span>
-              <span>同步：{deviceRecord?.lastSyncAt.slice(11, 16) ?? "-"}</span>
-            </td>
-            <td>
-              <StatusPill
-                label={memoryEstablished ? "已建立" : "未建立"}
-                tone={memoryEstablished ? "stable" : "muted"}
-              />
-            </td>
             <td>
               <strong>{careLoopLabels[careLoopStatus]}</strong>
               {task ? <span>{taskStatusLabels[task.status]}</span> : null}

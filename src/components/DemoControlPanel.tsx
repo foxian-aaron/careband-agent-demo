@@ -2,7 +2,6 @@ import type { Dispatch } from "react";
 import type { DemoAction, DemoState } from "../store/demoStore";
 import {
   getActiveTaskForElder,
-  getAgentTraceForElder,
   getEventsForElder,
   getRiskForElder,
 } from "../store/demoStore";
@@ -88,10 +87,6 @@ export const DemoControlPanel = ({ state, dispatch }: DemoControlPanelProps) => 
 
   return (
     <section className="demo-control">
-      <div className="target-note">
-        <strong>目前照護流程操作對象：陳伯 E001</strong>
-        <span>Apple Health 示例快照會寫入 TEST001 團隊測試資料，不會改動陳伯照護故事。</span>
-      </div>
       <div className="control-status">
         <div>
           <span>当前 Demo 阶段</span>
@@ -116,136 +111,49 @@ export const DemoControlPanel = ({ state, dispatch }: DemoControlPanelProps) => 
         </div>
       </div>
       <div className="control-buttons">
-        <button onClick={() => dispatch({ type: "RESET_DEMO" })}>重置本地 Demo</button>
+        <button onClick={() => dispatch({ type: "RESET_DEMO" })}>重置 Demo</button>
         <button
           className="primary"
           disabled={!canTriggerDizziness}
           title={canTriggerDizziness ? "触发语音主诉并创建高优先级任务" : "本轮头晕事件已触发"}
           onClick={() => dispatch({ type: "TRIGGER_CHEN_DIZZINESS" })}
         >
-          触发陈伯 E001 头晕语音事件
+          触发陈伯头晕语音事件
         </button>
         <button
           disabled={!canAccept}
           title={canAccept ? "接单后任务进入处理中" : "需要先触发任务，或当前任务已接单"}
           onClick={() => dispatch({ type: "CAREGIVER_ACCEPT_TASK" })}
         >
-          陳伯 E001 護工接單
+          护工接单
         </button>
         <button
           disabled={!canMarkViewed}
           title={canMarkViewed ? "记录护工到场查看" : "护工接单后才能标记已查看"}
           onClick={() => dispatch({ type: "CAREGIVER_MARK_VIEWED" })}
         >
-          陳伯 E001 標記已查看
+          标记已查看
         </button>
         <button
           disabled={!canConfirmMedication}
           title={canConfirmMedication ? "确认晚药状态" : "标记已查看后才能确认晚药"}
           onClick={() => dispatch({ type: "CONFIRM_EVENING_MEDICATION" })}
         >
-          確認陳伯 E001 晚藥
+          确认晚药
         </button>
         <button
           disabled={!canComplete}
           title={canComplete ? "完成并写入护工备注" : "确认晚药后才能完成处理"}
           onClick={() => dispatch({ type: "COMPLETE_CARE_TASK" })}
         >
-          完成陳伯 E001 護工任務
+          完成护工处理
         </button>
         <button onClick={() => dispatch({ type: "TRIGGER_SOS" })}>
-          触发陈伯 E001 SOS 测试
+          触发 SOS 测试
         </button>
         <button onClick={() => dispatch({ type: "SIMULATE_DATA_GAP" })}>
-          模拟陈伯 E001 数据不足
+          模拟数据不足
         </button>
-        <button onClick={() => dispatch({ type: "IMPORT_APPLE_HEALTH_SAMPLE" })}>
-          导入 TEST001 Apple Health 示例快照
-        </button>
-        <a className="text-button" href={`#/elder/${chenId}/memory-intake`}>
-          导入历史资料
-        </a>
-        <a className="text-button" href={`#/elder/${chenId}/wearable-import`}>
-          导入穿戴数据
-        </a>
-        <button
-          onClick={() =>
-            dispatch({ type: "TRIGGER_HARDWARE_EVENT", elderId: chenId, eventType: "sos_long_press" })
-          }
-        >
-          长按 SOS
-        </button>
-        <button
-          onClick={() =>
-            dispatch({ type: "TRIGGER_HARDWARE_EVENT", elderId: chenId, eventType: "fall_detected" })
-          }
-        >
-          模拟跌倒
-        </button>
-        <button
-          onClick={() =>
-            dispatch({ type: "TRIGGER_HARDWARE_EVENT", elderId: chenId, eventType: "no_response_after_fall" })
-          }
-        >
-          模拟无回应
-        </button>
-        <button
-          onClick={() =>
-            dispatch({ type: "TRIGGER_HARDWARE_EVENT", elderId: chenId, eventType: "device_not_worn" })
-          }
-        >
-          模拟设备未佩戴
-        </button>
-        <button onClick={() => dispatch({ type: "SIMULATE_GEOFENCE_EXIT", elderId: chenId })}>
-          模拟离开安全区
-        </button>
-        <button onClick={() => dispatch({ type: "SIMULATE_AGENT_FAILURE", elderId: chenId })}>
-          模拟 Agent 失败
-        </button>
-        <button
-          onClick={() =>
-            dispatch({
-              type: "FALLBACK_TO_RULE_SUMMARY",
-              trace: { ...getAgentTraceForElder(state, chenId), status: "fallback_rule" },
-            })
-          }
-        >
-          模拟 Agent fallback
-        </button>
-        <button
-          onClick={() =>
-            dispatch({
-              type: "GENERATE_WEEKLY_SUMMARY",
-              summary: {
-                elderId: chenId,
-                generatedAt: new Date().toISOString(),
-                findings: [
-                  "活动量连续 3 天下滑",
-                  "睡眠连续 2 天低于本人基线",
-                  "本周 2 次晚药延迟确认",
-                  "本周 1 次头晕反馈",
-                  "设备佩戴稳定性：82%",
-                ],
-                summary:
-                  "近 7 日陈伯活动量呈下降趋势，睡眠连续两天低于个人基线，晚药确认存在延迟。建议护工下周重点关注活动能力、晚药确认和头晕反馈是否重复出现。",
-                wearStability: 0.82,
-              },
-            })
-          }
-        >
-          生成周报
-        </button>
-      </div>
-      <div className="panel">
-        <div className="section-title">
-          <span>v0.2 数据接入</span>
-          <h2>后端与 Apple Health</h2>
-        </div>
-        <p className="muted-copy">
-          当前后端状态：{state.backend.mode === "connected" ? "已连接" : "未连接，使用本地 Mock fallback"}。
-          陈伯 E001 用于完整照护闭环；TEST001 用于团队 Apple Watch 测试资料导入。示例导入会写入 TEST001 的 data_source = Apple Health Export。
-        </p>
-        {state.backend.error ? <p className="muted-copy">最近后端错误：{state.backend.error}</p> : null}
       </div>
       <div className="panel">
         <div className="section-title">

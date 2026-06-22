@@ -1,6 +1,5 @@
 param(
-  [int]$Port = 5173,
-  [int]$BackendPort = 3001
+  [int]$Port = 5173
 )
 
 $ErrorActionPreference = 'Stop'
@@ -35,27 +34,12 @@ if (-not (Test-Path $NpmCli)) {
   tar -xzf $NpmTarball -C $NpmToolDir
 }
 
-$env:PATH = "$(Split-Path $NodeExe);$env:PATH"
-
 if (-not (Test-Path (Join-Path $ProjectRoot 'node_modules'))) {
-  Write-Host 'Installing frontend dependencies...'
+  Write-Host 'Installing demo dependencies...'
+  $env:PATH = "$(Split-Path $NodeExe);$env:PATH"
   & $NodeExe $NpmCli install
 }
 
-$BackendRoot = Join-Path $ProjectRoot 'backend'
-if (-not (Test-Path (Join-Path $BackendRoot 'node_modules'))) {
-  Write-Host 'Installing backend dependencies...'
-  Push-Location $BackendRoot
-  & $NodeExe $NpmCli install
-  Pop-Location
-}
-
-$env:PORT = "$BackendPort"
-$env:FRONTEND_PORT = "$Port"
-$env:CORS_ORIGIN = "http://localhost:$Port"
-$env:VITE_API_BASE_URL = "http://localhost:$BackendPort"
-
-Write-Host 'Starting CareBand Agent Demo v0.2...'
-Write-Host "Frontend: http://127.0.0.1:$Port/#/institution"
-Write-Host "Backend:  http://127.0.0.1:$BackendPort/api/health"
-& $NodeExe 'scripts\start-v02.mjs'
+Write-Host 'Starting CareBand Agent Demo...'
+Write-Host "Open: http://127.0.0.1:$Port/#/institution"
+& $NodeExe 'node_modules\vite\bin\vite.js' --host 127.0.0.1 --port $Port

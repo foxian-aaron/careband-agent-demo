@@ -11,24 +11,13 @@ export const DocsPage = () => (
     </header>
 
     <section className="panel docs-section">
-      <h2>Demo v0.2 落地验证扩展</h2>
-      <ul className="insight-list">
-        <li>长者记忆初始化：`#/elder/E001/memory-intake`，支持资料粘贴、Mock AI 提取、人工确认和保存。</li>
-        <li>穿戴导入模拟：`#/elder/E001/wearable-import`，CSV 导入后回写 DailySnapshot、趋势和设备状态。</li>
-        <li>硬件模拟：`#/hardware-simulator`，支持 SOS、跌倒、无回应、设备未佩戴、低电量和重新佩戴。</li>
-        <li>Agent Trace：驾驶舱和 Demo Control 展示 request、response、Mock / Future QwenPaw 标签和 fallback。</li>
-        <li>隐私授权与试点计划：`#/privacy` 和 `#/pilot-plan` 展示数据边界、角色权限和试点路径。</li>
-      </ul>
-    </section>
-
-    <section className="panel docs-section">
       <h2>Demo 剧本</h2>
       <ol>
-        <li>从机构端查看 seeded demo 列表，区分 TEST001 Apple Watch 测试资料和 E001 陈伯照护闭环。</li>
+        <li>从机构端查看 5 位长者风险热力图，说明陈伯初始为“需关注”。</li>
         <li>进入陈伯驾驶舱，展示个人基线、今日偏离和 Decision Trace。</li>
-        <li>进入记忆初始化页，生成并保存陈伯初始照护记忆，返回驾驶舱查看标签。</li>
-        <li>进入穿戴导入页，导入陈伯 7 天 CSV 示例数据，返回驾驶舱查看趋势和设备状态。</li>
-        <li>在 Demo 控制台或硬件模拟器触发“我有点头晕”、SOS、跌倒、离开安全区等事件。</li>
+        <li>打开老人档案页，说明系统结合长期档案、照护团队和授权状态。</li>
+        <li>打开用药计划页，说明早药已确认、晚药未确认如何进入风险判断。</li>
+        <li>在 Demo 控制台触发“我有点头晕”语音事件。</li>
         <li>切回护工端，查看高优先级任务“陈伯需要立即查看”。</li>
         <li>切到家属端，展示温和安心卡和“护工已收到提醒”。</li>
         <li>护工接单、标记已查看、确认晚药、完成处理。</li>
@@ -41,18 +30,8 @@ export const DocsPage = () => (
       <p>
         Demo 使用 ElderProfile、ElderProfileDetail、ConsentStatus、ContactPerson、
         PersonalBaseline、DailySnapshot、MedicationPlan、MedicationDose、CareEvent、
-        RiskResult、CareTask 和 AgentRoleSummaries 组织数据。v0.2 加入 Apple Health
-        DailySnapshot、后端 API、Agent fallback 和静态预览说明，并保持
-        careLoopStatus / displayStatus 与 riskLevel 分层。
-      </p>
-    </section>
-
-    <section className="panel docs-section">
-      <h2>公網靜態預覽說明</h2>
-      <p>
-        GitHub Pages 只能部署靜態前端，因此 /v0.2/ 公網鏈接使用 mock fallback。
-        完整 Express + SQLite + Agent 後端需要本地或 Node hosting 啟動。
-        TEST001 是團隊 Apple Watch 測試資料，非真實長者；E001 陳伯才是主照護閉環 Demo。
+        RiskResult、CareTask 和 AgentRoleSummaries 组织数据。v0.1.3 新增老人档案页和
+        用药计划页，并保持 careLoopStatus / displayStatus 与 riskLevel 分层。
       </p>
     </section>
 
@@ -108,8 +87,7 @@ Mock AI Agent 生成三端摘要
     <section className="panel docs-section">
       <h2>后续接入 QwenPaw / 硬件</h2>
       <p>
-        陈伯驾驶舱已加入 QwenPaw-style Agent IO 面板。当前 provider 为 mock/OpenAI fallback；
-        后续可在 /api/agent/analyze 后端实现替换为 QwenPaw-compatible endpoint；
+        陈伯驾驶舱已加入 Mock QwenPaw Agent IO 面板。后续可将 riskEngine 输出、事件摘要和老人基线发送给 QwenPaw 生成真实多角色摘要；
         硬件侧计划通过原型传感器模块或手环式原型，将心率趋势、步数、睡眠参考、
         佩戴时间、安全区状态和 SOS 事件映射为 DailySnapshot 与 CareEvent。
       </p>

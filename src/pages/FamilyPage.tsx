@@ -1,9 +1,6 @@
 import { FamilyPeaceCard } from "../components/FamilyPeaceCard";
 import { MedicalDisclaimer } from "../components/MedicalDisclaimer";
-import { MockNoticeBanner } from "../components/MockNoticeBanner";
-import { UnknownElderState } from "../components/UnknownElderState";
 import { deriveCareLoopStatus, deriveDisplayStatus } from "../lib/displayStatus";
-import { getElderViewModel } from "../lib/elderView";
 import { buildFamilyStatusMessage } from "../lib/familyCopy";
 import {
   getActiveTaskForElder,
@@ -18,9 +15,7 @@ interface FamilyPageProps {
 
 export const FamilyPage = ({ elderId }: FamilyPageProps) => {
   const { state } = useDemo();
-  const viewModel = getElderViewModel(state, elderId);
-  if (!viewModel.found) return <UnknownElderState elderId={elderId} />;
-  const { profile } = viewModel;
+  const profile = state.profiles[elderId] ?? state.profiles.E001;
   const snapshot = state.snapshots[profile.elderId];
   const risk = getRiskForElder(state, profile.elderId);
   const task = getActiveTaskForElder(state, profile.elderId);
@@ -46,7 +41,6 @@ export const FamilyPage = ({ elderId }: FamilyPageProps) => {
           <p>给家属看得懂、不过度制造焦虑的照护状态摘要。</p>
         </div>
       </header>
-      <MockNoticeBanner>家属端当前展示为模拟数据和温和摘要，不展示过多专业指标或精确位置轨迹。</MockNoticeBanner>
       <FamilyPeaceCard
         profile={profile}
         snapshot={snapshot}

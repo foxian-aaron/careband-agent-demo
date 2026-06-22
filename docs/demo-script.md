@@ -1,9 +1,4 @@
-# 智护环 CareBand Agent Demo v0.1.3 路演脚本（已归档）
-
-此文件是旧版 v0.1.3 路演脚本，保留作历史参考。v0.2 主演示请使用：
-
-- `docs/demo_script_chenbo.md`
-- `docs/demo_script_test001_apple_watch.md`
+# 智护环 CareBand Agent Demo v0.1.3 路演脚本
 
 ## 1. 开场介绍
 

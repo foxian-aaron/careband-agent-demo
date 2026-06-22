@@ -2,22 +2,6 @@ import type { ElderProfile } from "../types";
 
 export const mockProfiles: ElderProfile[] = [
   {
-    elderId: "TEST001",
-    name: "團隊 Apple Watch 測試資料",
-    age: 30,
-    gender: "測試",
-    room: "TEST",
-    floor: "資料驗證",
-    chronicConditions: [],
-    riskTags: [
-      "非真實長者",
-      "驗證真實穿戴資料導入",
-      "不作為真實老人健康結論",
-    ],
-    caregiverId: "CG-A",
-    familyContactId: "FAM-TEST001",
-  },
-  {
     elderId: "E001",
     name: "陈伯",
     age: 78,

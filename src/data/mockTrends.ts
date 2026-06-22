@@ -2,18 +2,6 @@ import type { ElderTrend } from "../types";
 
 export const mockTrends: ElderTrend[] = [
   {
-    elderId: "TEST001",
-    points: [
-      { date: "06/13", steps: 15542, sleepHours: 5.8, medicationOnTimeRate: 1, riskLevel: "stable" },
-      { date: "06/14", steps: 17068, sleepHours: 6.4, medicationOnTimeRate: 1, riskLevel: "stable" },
-      { date: "06/15", steps: 19828, sleepHours: 6.7, medicationOnTimeRate: 1, riskLevel: "stable" },
-      { date: "06/16", steps: 18370, sleepHours: 5.9, medicationOnTimeRate: 1, riskLevel: "stable" },
-      { date: "06/17", steps: 20950, sleepHours: 6.3, medicationOnTimeRate: 1, riskLevel: "stable" },
-      { date: "06/18", steps: 21610, sleepHours: 6.0, medicationOnTimeRate: 1, riskLevel: "stable" },
-      { date: "06/19", steps: 1099, sleepHours: 6.27, medicationOnTimeRate: 1, riskLevel: "observation" },
-    ],
-  },
-  {
     elderId: "E001",
     points: [
       { date: "06/04", steps: 2280, sleepHours: 6.8, medicationOnTimeRate: 1, riskLevel: "stable" },

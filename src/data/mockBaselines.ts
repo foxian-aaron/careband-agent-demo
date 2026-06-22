@@ -2,17 +2,6 @@ import type { PersonalBaseline } from "../types";
 
 export const mockBaselines: PersonalBaseline[] = [
   {
-    elderId: "TEST001",
-    avgSteps7d: 16352,
-    avgSleep7d: 6.2,
-    avgActiveMinutes7d: 16,
-    restingHrBaseline: 71,
-    medicationOnTimeRate: 1,
-    baselineConfidence: 0.92,
-    baselineLabel: "7日基線",
-    usableDays: 7,
-  },
-  {
     elderId: "E001",
     avgSteps7d: 2150,
     avgSleep7d: 6.5,

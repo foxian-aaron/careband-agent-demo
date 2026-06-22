@@ -32,11 +32,6 @@ const percentDrop = (today: number | null, baseline: number) => {
   return `${Math.round((1 - today / baseline) * 100)}%`;
 };
 
-const formatSigned = (value: number, digits = 0) => {
-  const rounded = Number(value.toFixed(digits));
-  return `${rounded > 0 ? "+" : ""}${rounded}`;
-};
-
 export const DecisionTracePanel = ({
   profile,
   baseline,
@@ -55,7 +50,9 @@ export const DecisionTracePanel = ({
   const heartRateDiff =
     snapshot.heartRate === null
       ? "数据缺失"
-      : `${formatSigned(snapshot.heartRate - baseline.restingHrBaseline, 1)} bpm`;
+      : `${snapshot.heartRate - baseline.restingHrBaseline > 0 ? "+" : ""}${
+          snapshot.heartRate - baseline.restingHrBaseline
+        } bpm`;
 
   return (
     <section className="panel decision-trace">

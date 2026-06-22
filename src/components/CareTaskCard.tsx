@@ -4,7 +4,6 @@ import type { CareEvent, CareTask, ElderProfile, MedicationStatus, RiskResult } 
 import type { CareLoopStatus } from "../lib/displayStatus";
 import { careLoopLabels, priorityLabels, taskStatusLabels } from "../lib/statusLabels";
 import { RiskBadge } from "./RiskBadge";
-import { StatusPill } from "./StatusPill";
 
 interface CareTaskCardProps {
   task: CareTask;
@@ -27,11 +26,7 @@ export const CareTaskCard = ({
 }: CareTaskCardProps) => {
   const isChen = profile.elderId === "E001";
   const isCompleted = task.status === "completed";
-  const hasChecked = events.some(
-    (event) =>
-      event.eventType === "caregiver_checked" &&
-      (!event.linkedTaskId || event.linkedTaskId === task.taskId),
-  );
+  const hasChecked = events.some((event) => event.eventType === "caregiver_checked");
   const canAccept = isChen && task.status === "pending";
   const canMarkViewed = isChen && task.status === "in_progress" && !hasChecked;
   const canConfirmMedication =
@@ -41,19 +36,6 @@ export const CareTaskCard = ({
     task.status === "in_progress" &&
     hasChecked &&
     medicationEvening === "confirmed";
-  const sourceLabels = {
-    rule_engine: "规则引擎",
-    hardware_event: "硬件事件",
-    voice_event: "语音事件",
-    data_insufficient: "数据不足",
-    location_event: "位置事件",
-    agent: "Agent",
-  };
-  const agentSourceLabels = {
-    mock: "Mock",
-    future_qwenpaw: "Future QwenPaw",
-    fallback_rule: "规则 fallback",
-  };
 
   return (
     <article className={`task-card priority-${task.priority}`}>
@@ -69,15 +51,6 @@ export const CareTaskCard = ({
         <RiskBadge level={risk.riskLevel} score={risk.riskScore} />
       </div>
       <dl className="task-details">
-        <div>
-          <dt>任务来源</dt>
-          <dd>
-            <div className="tag-row">
-              <StatusPill label={sourceLabels[task.sourceType ?? "rule_engine"]} tone="observation" />
-              <StatusPill label={`Agent 摘要来源：${agentSourceLabels[task.agentSummarySource ?? "mock"]}`} tone="stable" />
-            </div>
-          </dd>
-        </div>
         <div>
           <dt>原因</dt>
           <dd>{task.reason}</dd>

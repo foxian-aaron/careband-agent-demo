@@ -16,14 +16,6 @@ export const mockContacts: ContactPerson[] = [
     visibleTo: ["caregiver", "institution"],
   },
   {
-    contactId: "FAM-TEST001",
-    name: "團隊測試聯絡人",
-    role: "family",
-    relation: "測試資料負責人",
-    phoneMasked: "N/A",
-    visibleTo: ["caregiver", "family", "institution"],
-  },
-  {
     contactId: "FAM-E001",
     name: "陈先生",
     role: "family",

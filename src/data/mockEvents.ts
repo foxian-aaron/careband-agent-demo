@@ -2,18 +2,6 @@ import type { CareEvent, CareTask, OperationalState } from "../types";
 
 export const mockEvents: CareEvent[] = [
   {
-    eventId: "EVT-TEST001-APPLE-HEALTH-IMPORT",
-    elderId: "TEST001",
-    eventType: "system_risk_update",
-    timestamp: "2026-06-20T06:31:33+08:00",
-    title: "Apple Health Export 每日聚合快照已匯入",
-    source: "system",
-    severity: "observation",
-    payload: {
-      note: "團隊 Apple Watch 測試資料，僅含每日聚合資料。",
-    },
-  },
-  {
     eventId: "EVT-E001-WAKE",
     elderId: "E001",
     eventType: "system_risk_update",
@@ -143,7 +131,6 @@ export const mockTasks: CareTask[] = [
 ];
 
 export const mockOperationalStates: Record<string, OperationalState> = {
-  TEST001: "normal",
   E001: "normal",
   E002: "in_progress",
   E003: "normal",

@@ -4,9 +4,7 @@ import { ConsentStatusCard } from "../components/profile/ConsentStatusCard";
 import { ProfileIdentityCard } from "../components/profile/ProfileIdentityCard";
 import { RiskSummaryCard } from "../components/profile/RiskSummaryCard";
 import { MedicalDisclaimer } from "../components/MedicalDisclaimer";
-import { UnknownElderState } from "../components/UnknownElderState";
 import { deriveCareLoopStatus, deriveDisplayStatus } from "../lib/displayStatus";
-import { getElderViewModel } from "../lib/elderView";
 import { getCareTeamForElder, getProfileDetail } from "../lib/profileSelectors";
 import {
   getEventsForElder,
@@ -20,9 +18,7 @@ interface ElderProfilePageProps {
 
 export const ElderProfilePage = ({ elderId }: ElderProfilePageProps) => {
   const { state } = useDemo();
-  const viewModel = getElderViewModel(state, elderId);
-  if (!viewModel.found) return <UnknownElderState elderId={elderId} />;
-  const { profile } = viewModel;
+  const profile = state.profiles[elderId] ?? state.profiles.E001;
   const detail = getProfileDetail(profile.elderId, state);
   const baseline = state.baselines[profile.elderId];
   const snapshot = state.snapshots[profile.elderId];

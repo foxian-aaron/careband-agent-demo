@@ -1,10 +1,5 @@
-import { AgentTracePanel } from "../components/AgentTracePanel";
 import { DemoControlPanel } from "../components/DemoControlPanel";
-import { FallRiskSimulator } from "../components/FallRiskSimulator";
-import { HardwareSimulator } from "../components/HardwareSimulator";
-import { LocationRiskSimulator } from "../components/LocationRiskSimulator";
 import { MedicalDisclaimer } from "../components/MedicalDisclaimer";
-import { VoiceInputSimulator } from "../components/VoiceInputSimulator";
 import { useDemo } from "../store/demoStore";
 
 export const DemoControlPage = () => {
@@ -19,13 +14,6 @@ export const DemoControlPage = () => {
         </div>
       </header>
       <DemoControlPanel state={state} dispatch={dispatch} />
-      <HardwareSimulator elderId="E001" />
-      <section className="two-column">
-        <VoiceInputSimulator elderId="E001" />
-        <LocationRiskSimulator elderId="E001" />
-      </section>
-      <FallRiskSimulator elderId="E001" />
-      <AgentTracePanel elderId="E001" />
       <MedicalDisclaimer />
     </div>
   );

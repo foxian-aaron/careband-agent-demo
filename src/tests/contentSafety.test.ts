@@ -3,10 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const files = [
   "README.md",
-  "docs/demo_script_chenbo.md",
-  "docs/demo_script_test001_apple_watch.md",
-  "docs/v0.1.3_demo_script.md",
-  "docs/agent_architecture.md",
+  "docs/demo-script.md",
   "docs/data-dictionary.md",
   "docs/event-flow.md",
   "docs/risk-rules.md",
@@ -23,7 +20,7 @@ const files = [
 const readProjectFile = (file: string) =>
   readFileSync(new URL(`../../${file}`, import.meta.url), "utf8");
 
-describe("content safety for CareBand demo docs", () => {
+describe("content safety for v0.1.3 additions", () => {
   it("does not add disallowed hardware wording", () => {
     const content = files.map(readProjectFile).join("\n");
     const disallowedHardwarePattern = new RegExp(
